@@ -1,0 +1,112 @@
+{
+  "type": "workout-routines",
+  "version": 1,
+  "_README": [
+    "Routine template for the Workout Tracker.",
+    "1. Copy this file and edit the routine(s) below.",
+    "2. In the app: Programme -> Manage routines -> Import routines, and pick your file.",
+    "3. Importing ADDS routines; it never overwrites your history or existing routines.",
+    "Field notes:",
+    "  name      (required) routine title",
+    "  days[]    (required) one entry per workout day",
+    "    code      short label shown on the day button (A, B, X1, Legs ...)",
+    "    focus     day name, e.g. 'Push'",
+    "    color     hex accent for the day, e.g. '#FF6B2C'",
+    "    muscles   subtitle line (free text)",
+    "    duration  e.g. '~45 min'",
+    "    express   true = shown in the Express section (occasional faster session)",
+    "    exercises[]",
+    "      name      (required) EXACT name; reuse the same spelling across routines so progress/PRs carry over",
+    "      sets      number of sets",
+    "      reps      free text, e.g. '8-10' or '45 sec'",
+    "      rest      rest in seconds (number)",
+    "      equipment free text. Include the word 'Dumbbells' (plural) for two-dumbbell lifts so the weight picker uses the dumbbell stack and the x2 total",
+    "      superset  (optional) EXACT name of the partner exercise to pair as a superset",
+    "      cues      (optional) coaching cues",
+    "      why       (optional) rationale shown under the exercise",
+    "  Any 'id' you set is ignored on import (a fresh one is generated) so you can import the same file repeatedly."
+  ],
+  "routines": [
+    {
+      "name": "My Custom Routine",
+      "days": [
+        {
+          "code": "A",
+          "focus": "Upper",
+          "color": "#FF6B2C",
+          "muscles": "Chest · Back · Shoulders · Arms",
+          "duration": "~50 min",
+          "express": false,
+          "exercises": [
+            {
+              "name": "Bench Press",
+              "sets": 4,
+              "reps": "8-10",
+              "rest": 90,
+              "equipment": "Dumbbells + Bench",
+              "cues": "Control the lowering phase. Full range of motion.",
+              "why": "Primary horizontal push."
+            },
+            {
+              "name": "Seated Cable Row",
+              "sets": 4,
+              "reps": "10-12",
+              "rest": 90,
+              "equipment": "Cable",
+              "cues": "Sit tall, pull elbows past the torso, pause at the peak."
+            },
+            {
+              "name": "Tricep Cable Pushdown",
+              "sets": 3,
+              "reps": "12-15",
+              "rest": 60,
+              "equipment": "Cable",
+              "superset": "Dumbbell Curl"
+            },
+            {
+              "name": "Dumbbell Curl",
+              "sets": 3,
+              "reps": "12",
+              "rest": 60,
+              "equipment": "Dumbbells",
+              "superset": "Tricep Cable Pushdown"
+            }
+          ]
+        },
+        {
+          "code": "B",
+          "focus": "Lower",
+          "color": "#2FD27A",
+          "muscles": "Quads · Hamstrings · Core",
+          "duration": "~45 min",
+          "express": false,
+          "exercises": [
+            {
+              "name": "Goblet Squat",
+              "sets": 4,
+              "reps": "10-12",
+              "rest": 90,
+              "equipment": "Dumbbell",
+              "cues": "Chest tall, squat to depth, drive through the heels."
+            },
+            {
+              "name": "Romanian Deadlift",
+              "sets": 3,
+              "reps": "10",
+              "rest": 90,
+              "equipment": "Dumbbells",
+              "cues": "Hinge at the hips, soft knees, neutral spine."
+            },
+            {
+              "name": "Plank",
+              "sets": 3,
+              "reps": "45 sec",
+              "rest": 45,
+              "equipment": "Bodyweight"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

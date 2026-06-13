@@ -1,2 +1,3 @@
 workout-backup-*.json
 .DS_Store
+.claude/
