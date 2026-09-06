@@ -37,6 +37,7 @@
   input, select, textarea { font-family: inherit; font-size: 16px; }
   select { cursor: pointer; }
   .hidden { display: none !important; }
+  [hidden] { display: none !important; }   /* author display rules would otherwise beat the UA default */
 
   /* Header */
   .header { padding: max(26px, calc(var(--safe-t) + 16px)) 20px 16px; }
@@ -91,6 +92,8 @@
   .ss-plus { color: var(--dim); margin: 0 2px; font-weight: 700; }
   .chev { color: var(--dim); font-size: 13px; transition: transform 0.25s cubic-bezier(.4,0,.2,1); flex-shrink: 0; }
   .express-tag { font-size: 9.5px; font-weight: 800; background: color-mix(in srgb, #9C7BFF 22%, var(--elev)); color: #c7b6ff; padding: 3px 8px; border-radius: 6px; letter-spacing: 0.06em; margin-left: 8px; vertical-align: middle; }
+  .swap-tag { font-size: 9px; font-weight: 800; background: color-mix(in srgb, var(--pr) 20%, var(--elev)); color: var(--pr); padding: 3px 7px; border-radius: 5px; letter-spacing: 0.06em; margin-left: 7px; vertical-align: middle; }
+  .swap-tag.added { background: color-mix(in srgb, var(--cond) 20%, var(--elev)); color: var(--cond); }
 
   .ex-body { border-top: 1px solid var(--border); padding: 16px; }
   .cues { font-size: 13.5px; color: #cdd2da; line-height: 1.65; }
@@ -162,6 +165,32 @@
   .modal-actions button { flex: 1; border-radius: var(--r-sm); padding: 14px; font-size: 14px; font-weight: 700; background: var(--card2); border: 1px solid var(--border2); color: var(--muted); }
   .modal-actions button.primary { background: var(--cond); border-color: var(--cond); color: #06210f; }
   .modal-actions button.warn { background: color-mix(in srgb, var(--danger) 10%, var(--card)); border-color: color-mix(in srgb, var(--danger) 30%, transparent); color: var(--danger); flex: 0 0 auto; padding: 14px 16px; }
+
+  /* Swap + exercise library picker */
+  .swap-btn { background: var(--card2); border: 1px dashed var(--border2); color: var(--muted); font-size: 13px; padding: 13px; border-radius: var(--r-sm); width: 100%; margin-top: 8px; font-weight: 600; }
+  .swap-btn:active { background: var(--elev); }
+  .swap-note { font-size: 11.5px; color: var(--dim); margin-top: 6px; text-align: center; }
+  .add-ex-wrap { padding: 14px 16px 0; }
+  .add-ex-btn { width: 100%; background: var(--card2); border: 1px dashed var(--border2); color: var(--muted); font-size: 14px; font-weight: 700; padding: 15px; border-radius: var(--r-sm); }
+  .add-ex-btn:active { background: var(--elev); }
+  .swap-note b { color: var(--muted); }
+  .linkish { background: none; color: var(--accent); font-size: 11.5px; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; padding: 2px; }
+  .modal.pick { display: flex; flex-direction: column; max-height: 84vh; }
+  .pick-search { width: 100%; margin-top: 14px; background: var(--card2); border: 1px solid var(--border); border-radius: var(--r-sm); color: var(--text); font: inherit; font-size: 15px; padding: 12px; }
+  .pick-search:focus { outline: none; border-color: var(--accent); }
+  .chip-row { display: flex; gap: 6px; overflow-x: auto; padding: 12px 0 4px; flex-shrink: 0; scrollbar-width: none; }
+  .chip-row::-webkit-scrollbar { display: none; }
+  .chip { flex-shrink: 0; background: var(--card2); border: 1px solid var(--border); color: var(--muted); border-radius: 999px; padding: 8px 13px; font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+  .chip.on { background: color-mix(in srgb, var(--mc, var(--cond)) 18%, var(--card2)); border-color: var(--mc, var(--cond)); color: var(--mc, var(--cond)); }
+  .lib-list { overflow-y: auto; margin-top: 8px; flex: 1; -webkit-overflow-scrolling: touch; }
+  .lib-head { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 800; margin: 14px 0 7px; }
+  .lib-group:first-child .lib-head { margin-top: 4px; }
+  .lib-item { display: block; width: 100%; text-align: left; background: var(--card2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 12px 13px; margin-bottom: 7px; }
+  .lib-item:active { background: var(--elev); border-color: var(--border2); }
+  .lib-item.cur { border-color: color-mix(in srgb, var(--cond) 45%, var(--border)); }
+  .li-n { font-size: 14.5px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .li-cur { font-size: 9px; font-weight: 800; letter-spacing: 0.08em; background: var(--cond); color: #06210f; padding: 2px 6px; border-radius: 5px; margin-left: 7px; vertical-align: middle; }
+  .li-e { font-size: 11.5px; color: var(--dim); margin-top: 3px; }
 
   /* Finish workout + resume */
   .finish-wrap { padding: 6px 16px 26px; }
@@ -564,6 +593,8 @@ function commitSession(sess){
     snap: snap,            // per-exercise dumbbell mode used this session
     dbn: dbn,              // per-exercise dumbbell count (1 or 2)
     notes: notes,          // per-exercise free-text notes
+    swaps: sess.swaps || {},       // same-muscle substitutions made during the workout
+    extraEx: sess.extraEx || [],   // exercises added on the fly for this workout
     exercises: clean
   };
   const h = getHistory();
@@ -583,7 +614,8 @@ function sessionFromState(){
     day: state.day, routineId: (activeRoutine()||{}).id,
     startedAt: state.startedAt, resumeDate: state.resumeDate || null,
     logged: state.logged, snap: state.snap, dbn: state.dbn,
-    extra: state._extra || {}, notes: state.notes || {}, expanded: state.expanded
+    extra: state._extra || {}, notes: state.notes || {}, swaps: state.swaps || {},
+    extraEx: state.extraEx || [], expanded: state.expanded
   };
 }
 // Called after every logged/edited set so a refresh never loses progress.
@@ -598,6 +630,8 @@ function loadSessionIntoState(sess){
   state.dbn = sess.dbn || {};
   state._extra = sess.extra || {};
   state.notes = sess.notes || {};
+  state.swaps = sess.swaps || {};
+  state.extraEx = sess.extraEx || [];
   state.startedAt = sess.startedAt || new Date().toISOString();
   state.resumeDate = sess.resumeDate || null;
   state.expanded = (sess.expanded == null) ? 0 : sess.expanded;
@@ -697,7 +731,7 @@ function deleteSession(date){
 // ================================================================
 let state = {
   tab: 'today', day: null, expanded: 0, logged: {}, timer: null, snap: {}, dbn: {},
-  notes: {}, startedAt: null, resumeDate: null, noteModal: null,
+  notes: {}, swaps: {}, extraEx: [], startedAt: null, resumeDate: null, noteModal: null, exPicker: null,
   histTab: 'workouts', openSession: null,
   progView: 'info', editId: null, editDayOpen: null, exForm: null,
 };
@@ -812,13 +846,14 @@ function openDay(d){
     loadSessionIntoState({                // continue a workout already saved today
       day: d, routineId: rid, startedAt: prev.date, resumeDate: prev.date,
       logged: deepCopy(prev.exercises), snap: deepCopy(prev.snap||{}), dbn: deepCopy(prev.dbn||{}),
-      notes: deepCopy(prev.notes||{}), extra: {}, expanded: 0
+      notes: deepCopy(prev.notes||{}), swaps: deepCopy(prev.swaps||{}),
+      extraEx: deepCopy(prev.extraEx||[]), extra: {}, expanded: 0
     });
     persistSession(); render();
     toast('Continuing today\'s workout');
     return;
   }
-  state.day=d; state.expanded=0; state.logged={}; state._extra={}; state.notes={};
+  state.day=d; state.expanded=0; state.logged={}; state._extra={}; state.notes={}; state.swaps={}; state.extraEx=[];
   state.startedAt = new Date().toISOString(); state.resumeDate = null;
   // Seed each exercise's dumbbell mode + count from the last equivalent session, else defaults.
   state.snap = {}; state.dbn = {};
@@ -870,7 +905,7 @@ function advanceAfter(exs, blocks, block){
   return '🎉 All exercises done';
 }
 
-function curEx(exName){ const d=getDay(state.day); return d ? d.exercises.find(e=>e.name===exName) : null; }
+function curEx(exName){ const d=sessionDay(); return d ? d.exercises.find(e=>e.name===exName) : null; }
 function logSet(exName, setIdx, rest){
   const key = exName.replace(/\W/g,'');
   if(state.logged[exName] && state.logged[exName][setIdx]){
@@ -895,7 +930,7 @@ function logSet(exName, setIdx, rest){
   const isPR = metricNow > prevPR && prevPR>0;
   const prMsg = '🏆 New PR: ' + fmtMetric(track, metricNow) + '!';
 
-  const dayDef = getDay(state.day);
+  const dayDef = sessionDay();
   const exs = dayDef.exercises;
   const blocks = buildBlocks(exs);
   const block = findBlockFor(blocks, exs, exName);
@@ -948,7 +983,7 @@ function startWork(exName, setIdx){
   if(!state.logged[exName]) state.logged[exName]=[];
   state.logged[exName][setIdx] = { sec: workSec };
   persistSession();
-  const exs=getDay(state.day).exercises, blocks=buildBlocks(exs), block=findBlockFor(blocks,exs,exName);
+  const exs=sessionDay().exercises, blocks=buildBlocks(exs), block=findBlockFor(blocks,exs,exName);
   let nextLabel = '';
   if(loggedCount(exName) >= effSets(ex)) nextLabel = advanceAfter(exs, blocks, block);
   const phases = [{ kind:'work', label:exName, seconds:workSec }];
@@ -966,7 +1001,7 @@ function startInterval(exName){
     phases.push({ kind:'work', label:'Round '+(i+1)+' of '+rounds, seconds:workSec });
     if(i<rounds-1 && restSec>0) phases.push({ kind:'rest', label:'Rest · next Round '+(i+2), seconds:restSec });
   }
-  const exs=getDay(state.day).exercises, blocks=buildBlocks(exs), block=findBlockFor(blocks,exs,exName);
+  const exs=sessionDay().exercises, blocks=buildBlocks(exs), block=findBlockFor(blocks,exs,exName);
   const nextLabel = advanceAfter(exs, blocks, block);
   startPhases(phases, ()=>{ toast(nextLabel); });
 }
@@ -1057,6 +1092,235 @@ function noteButtonHTML(ex, showName){
 }
 
 // ================================================================
+//  EXERCISE LIBRARY PICKER  (add from list / swap same muscle group)
+// ================================================================
+function openLibrary(cfg){
+  if(!state.exPicker) pushNav();
+  state.exPicker = Object.assign({ q:'' }, cfg);
+  render();
+}
+function closePicker(){ state.exPicker=null; render(); popNavUI(); }
+function pickerReadQ(){ const el=document.getElementById('exPickQ'); if(el && state.exPicker) state.exPicker.q = el.value; }
+function pickerSetMuscle(m){ pickerReadQ(); state.exPicker.muscle = m; render(); }
+// Filters in the DOM rather than re-rendering, so the search box keeps focus.
+function pickerFilter(){
+  const p = state.exPicker; if(!p) return;
+  const el = document.getElementById('exPickQ');
+  p.q = el ? el.value : '';
+  const q = p.q.trim().toLowerCase();
+  document.querySelectorAll('#exPickList .lib-group').forEach(g=>{
+    let shown = 0;
+    g.querySelectorAll('.lib-item').forEach(it=>{
+      const hit = !q || it.dataset.n.indexOf(q) >= 0;
+      it.hidden = !hit; if(hit) shown++;
+    });
+    g.hidden = !shown;
+  });
+  const empty = document.getElementById('exPickEmpty');
+  if(empty) empty.hidden = !!document.querySelector('#exPickList .lib-group:not([hidden])');
+}
+// Replacement exercise for a swap: library defaults, but keep the volume the
+// user already programmed when the tracking type is unchanged.
+function swapMerge(old, muscle, name){
+  const entry = libEntry(muscle, name);
+  if(!entry) return null;
+  const fresh = libToExercise(muscle, entry);
+  const ex = Object.assign({}, fresh);
+  if(old && trackOf(old)===trackOf(fresh)){
+    const t = trackOf(old);
+    if(old.sets!=null) ex.sets = old.sets;
+    if(old.rest!=null) ex.rest = old.rest;
+    if((t==='weight'||t==='reps') && old.reps!=null) ex.reps = old.reps;
+    if(t==='time' && old.workSec!=null) ex.workSec = old.workSec;
+    if(t==='interval'){
+      if(old.rounds!=null) ex.rounds = old.rounds;
+      if(old.workSec!=null) ex.workSec = old.workSec;
+      if(old.restSec!=null) ex.restSec = old.restSec;
+    }
+  }
+  if(old && old.superset) ex.superset = old.superset;
+  return ex;
+}
+// ---- permanent swap, in the routine editor ----
+function swapExerciseAt(rid, code, idx, muscle, name){
+  mutateRoutine(rid, r=>{
+    const d = r.days.find(x=>x.code===code); if(!d) return;
+    const old = d.exercises[idx]; if(!old) return;
+    const ex = swapMerge(old, muscle, name); if(!ex) return;
+    d.exercises[idx] = ex;
+    d.exercises.forEach(e=>{ if(e.superset===old.name) e.superset = ex.name; });
+  });
+}
+// ---- this-workout-only swap ----
+// state.swaps is keyed by the ORIGINAL routine name, so swapping twice still
+// resolves back to the same slot.
+function swapKeyFor(displayName){
+  const sw = state.swaps || {};
+  for(const k in sw){ if(sw[k].name===displayName) return k; }
+  return displayName;
+}
+// Seed the dumbbell mode/count for an exercise appearing mid-session.
+function seedExerciseModes(ex){
+  if(!state.snap) state.snap={};
+  if(!state.dbn) state.dbn={};
+  if(!(ex.name in state.snap)) state.snap[ex.name] = !!(isDumbbell(ex) && getSetting('dbSnap', true));
+  if(!(ex.name in state.dbn)) state.dbn[ex.name] = dbCount(ex);
+}
+function swapInSession(displayName, muscle, name){
+  // an exercise added just for today is replaced in place, not tracked as a swap
+  const extras = state.extraEx || [];
+  const ei = extras.findIndex(e=>e.name===displayName);
+  if(ei >= 0){
+    const rep = swapMerge(extras[ei], muscle, name); if(!rep) return;
+    extras[ei] = rep; seedExerciseModes(rep); persistSession();
+    return;
+  }
+  const key = swapKeyFor(displayName);
+  const d = getDay(state.day); if(!d) return;
+  const orig = d.exercises.find(e=>e.name===key); if(!orig) return;
+  const ex = swapMerge(orig, muscle, name); if(!ex) return;
+  if(!state.swaps) state.swaps = {};
+  if(ex.name === key) delete state.swaps[key];
+  else state.swaps[key] = ex;
+  seedExerciseModes(ex);
+  persistSession();
+}
+// ---- extra exercises, added for this workout only ----
+function isExtra(name){ return (state.extraEx||[]).some(e=>e.name===name); }
+function addSessionExercise(muscle, name){
+  const entry = libEntry(muscle, name); if(!entry) return false;
+  const ex = libToExercise(muscle, entry);
+  const d = sessionDay();
+  // history is keyed by exercise name, so one name can only appear once
+  if(d && d.exercises.some(e=>e.name===ex.name)){ toast(ex.name+' is already in this workout'); return false; }
+  if(!state.extraEx) state.extraEx = [];
+  state.extraEx.push(ex);
+  seedExerciseModes(ex);
+  const nd = sessionDay();
+  const i = nd.exercises.findIndex(e=>e.name===ex.name);
+  if(i>=0) state.expanded = i;
+  persistSession();
+  return true;
+}
+function removeSessionExercise(name){
+  const done = (state.logged[name]||[]).filter(Boolean).length;
+  if(done && !confirm('Remove '+name+'? '+done+' logged set'+(done===1?'':'s')+' will be discarded.')) return;
+  state.extraEx = (state.extraEx||[]).filter(e=>e.name!==name);
+  delete state.logged[name];
+  if(state.notes) delete state.notes[name];
+  if(state._extra) delete state._extra[name];
+  persistSession(); render();
+  toast(name+' removed');
+}
+function revertSwap(displayName){
+  const key = swapKeyFor(displayName);
+  if(state.swaps) delete state.swaps[key];
+  persistSession(); render();
+  toast('Reverted to '+key);
+}
+// The day as the current workout sees it, with any swaps applied.
+function sessionDay(){
+  const d = getDay(state.day);
+  if(!d) return d;
+  const sw = state.swaps || {};
+  const keys = Object.keys(sw);
+  const extra = state.extraEx || [];
+  if(!keys.length && !extra.length) return d;
+  const rename = {}; keys.forEach(k=>{ rename[k] = sw[k].name; });
+  const exercises = d.exercises.map(e => Object.assign({}, sw[e.name] || e));
+  exercises.forEach(e=>{ if(e.superset && rename[e.superset]) e.superset = rename[e.superset]; });
+  extra.forEach(e => exercises.push(Object.assign({}, e)));
+  return Object.assign({}, d, { exercises: exercises });
+}
+function isSwapped(displayName){
+  const sw = state.swaps || {};
+  for(const k in sw){ if(sw[k].name===displayName) return k; }
+  return null;
+}
+function choosePickerItem(muscle, name){
+  const p = state.exPicker; if(!p) return;
+  if(p.mode==='add'){
+    const entry = libEntry(muscle, name);
+    if(entry) mutateRoutine(p.routineId, r=>{
+      const d = r.days.find(x=>x.code===p.code); if(d) d.exercises.push(libToExercise(muscle, entry));
+    });
+    state.exPicker=null; render(); popNavUI(); toast(name+' added');
+  } else if(p.mode==='addSession'){
+    const ok = addSessionExercise(muscle, name);
+    state.exPicker=null; render(); popNavUI();
+    if(ok) toast(name+' added to this workout');
+  } else if(p.mode==='swapEdit'){
+    swapExerciseAt(p.routineId, p.code, p.idx, muscle, name);
+    state.exPicker=null; render(); popNavUI(); toast('Swapped to '+name);
+  } else {
+    swapInSession(p.origName, muscle, name);
+    state.exPicker=null; render(); popNavUI(); toast('Swapped to '+name);
+  }
+}
+function renderExPicker(){
+  const p = state.exPicker; if(!p) return '';
+  const withEntries = MUSCLE_GROUPS.filter(m=>(EXERCISE_LIBRARY[m]||[]).length);
+  const groups = p.muscle==='__all__' ? withEntries : [p.muscle].filter(m=>EXERCISE_LIBRARY[m]);
+  const adding = p.mode==='add' || p.mode==='addSession';
+  const title = adding ? 'Add exercise' : 'Swap '+esc(p.origName||'');
+  const sub = p.mode==='addSession' ? 'Added to this workout only'
+    : p.mode==='add' ? 'Pick from the exercise library'
+    : 'Same muscle group — pick a replacement';
+  let chips = `<button class="chip ${p.muscle==='__all__'?'on':''}" onclick="pickerSetMuscle('__all__')">All</button>`;
+  withEntries.forEach(m=>{
+    chips += `<button class="chip ${p.muscle===m?'on':''}" style="--mc:${muscleColor(m)}" onclick="pickerSetMuscle('${sq(m)}')">${esc(m)}</button>`;
+  });
+  let list = '';
+  groups.forEach(m=>{
+    list += `<div class="lib-group"><div class="lib-head" style="color:${muscleColor(m)}">${esc(m)}</div>`;
+    (EXERCISE_LIBRARY[m]||[]).forEach(e=>{
+      const cur = p.origName===e.name;
+      list += `<button class="lib-item ${cur?'cur':''}" data-n="${esc(e.name.toLowerCase())}" onclick="choosePickerItem('${sq(m)}','${sq(e.name)}')">
+        <div class="li-n">${esc(e.name)}${cur?'<span class="li-cur">current</span>':''}</div>
+        <div class="li-e">${esc(e.equipment||'')} · ${esc(libSummary(e))}</div>
+      </button>`;
+    });
+    list += `</div>`;
+  });
+  return `<div class="modal-back" onclick="if(event.target===this)closePicker()">
+    <div class="modal pick">
+      <h3>${title}</h3>
+      <div class="msub">${sub}</div>
+      <input class="pick-search" id="exPickQ" placeholder="Search exercises…" value="${esc(p.q||'')}" oninput="pickerFilter()" autocomplete="off">
+      <div class="chip-row">${chips}</div>
+      <div class="lib-list" id="exPickList">${list}
+        <div class="empty-ex" id="exPickEmpty" hidden>No exercises match that search.</div>
+      </div>
+      <div class="modal-actions"><button onclick="closePicker()">Cancel</button></div>
+    </div></div>`;
+}
+// Marks a card whose exercise was substituted for, or added to, this workout.
+function swapTagHTML(ex){
+  if(isExtra(ex.name)) return `<span class="swap-tag added" title="Added to this workout only">+ ADDED</span>`;
+  const orig = isSwapped(ex.name);
+  return orig ? `<span class="swap-tag" title="Swapped in for ${esc(orig)}">⇄ SWAP</span>` : '';
+}
+// Swap control shown on an exercise card during a workout.
+function swapButtonHTML(ex, showName){
+  const orig = isSwapped(ex.name);
+  const what = showName ? ' · '+esc(ex.name) : '';
+  const m = muscleOfEx(ex);
+  let h = `<button class="swap-btn" onclick="openLibrary({mode:'swapSession',origName:'${sq(ex.name)}',muscle:'${sq(m)}'})">⇄ Swap exercise${what}</button>`;
+  if(isExtra(ex.name)){
+    h += `<div class="swap-note">Added for this workout only · <button class="linkish" onclick="removeSessionExercise('${sq(ex.name)}')">remove</button></div>`;
+  } else if(orig){
+    h += `<div class="swap-note">Swapped in for <b>${esc(orig)}</b> · <button class="linkish" onclick="revertSwap('${sq(ex.name)}')">undo</button></div>`;
+  }
+  return h;
+}
+function libSummary(e){
+  const t = e.track||'weight';
+  if(t==='interval') return (e.rounds||3)+' × '+fmtTime(e.workSec||180);
+  if(t==='time') return (e.sets||3)+' × '+fmtTime(e.workSec||45);
+  return (e.sets||3)+' × '+(e.reps||'10–12');
+}
+
+// ================================================================
 //  ANDROID BACK BUTTON — History API
 // ================================================================
 let _navDepth = 0;
@@ -1074,7 +1338,9 @@ window.addEventListener('popstate', () => {
   if(_ignoreNextPop){ _ignoreNextPop = false; return; }
   if(_navDepth > 0) _navDepth--;
   // Navigate back within the app
-  if(state.noteModal){
+  if(state.exPicker){
+    state.exPicker = null; render();
+  } else if(state.noteModal){
     state.noteModal = null; render();
   } else if(state.day !== null){
     persistSession();       // stays in progress — finish it with the Finish button
@@ -1380,6 +1646,138 @@ const MUSCLE_COLOR = {
   'Other':'#5a6473'
 };
 const MUSCLE_GROUPS = Object.keys(MUSCLE_COLOR);
+
+// ---- exercise library ----
+// Established movements grouped by the muscle they primarily train. Entries only
+// override the defaults applied in libToExercise(); `equipment` doubles as the
+// picker's subtitle. Adding from here stamps an explicit `muscle` so volume
+// balance and same-muscle swapping don't depend on name-matching.
+const EXERCISE_LIBRARY = {
+  'Chest': [
+    { name:'Bench Press', equipment:'Barbell or Dumbbells + Bench', reps:'8–10' },
+    { name:'Incline Dumbbell Press', equipment:'Dumbbells + Bench (30°)', reps:'8–12' },
+    { name:'Incline Barbell Press', equipment:'Barbell + Bench (30°)', reps:'8–10' },
+    { name:'Decline Press', equipment:'Barbell or Dumbbells + Bench', reps:'8–12' },
+    { name:'Machine Chest Press', equipment:'Chest press machine', reps:'10–12' },
+    { name:'Pec Deck', equipment:'Pec deck (forearms on pads)', reps:'12–15', rest:60 },
+    { name:'Cable Chest Fly', equipment:'Cable crossover', reps:'12–15', rest:60 },
+    { name:'Dumbbell Fly', equipment:'Dumbbells + Bench', reps:'12–15', rest:60 },
+    { name:'Push-ups', equipment:'Bodyweight', track:'reps', reps:'To failure', rest:60 },
+  ],
+  'Back': [
+    { name:'Pull-ups', equipment:'Pull-up bar', reps:'To failure (min 4)', rest:120 },
+    { name:'Chin-ups', equipment:'Pull-up bar (underhand)', reps:'To failure (min 4)', rest:120 },
+    { name:'Lat Pulldown', equipment:'Multi-gym high pulley', reps:'10–12' },
+    { name:'Seated Cable Row', equipment:'Multi-gym low pulley', reps:'10–12' },
+    { name:'Barbell Row', equipment:'Barbell', reps:'8–10' },
+    { name:'One-Arm Dumbbell Row', equipment:'Dumbbell + Bench', reps:'10–12' },
+    { name:'T-Bar Row', equipment:'T-bar / landmine', reps:'8–12' },
+    { name:'Chest-Supported Row', equipment:'Incline bench + Dumbbells', reps:'10–12' },
+    { name:'Straight-Arm Pulldown', equipment:'High pulley', reps:'12–15', rest:60 },
+    { name:'Back Extension', equipment:'Roman chair / bench', reps:'12–15', rest:60 },
+  ],
+  'Shoulders': [
+    { name:'Dumbbell Shoulder Press', equipment:'Dumbbells + Bench (upright)', reps:'10–12' },
+    { name:'Overhead Press', equipment:'Barbell', reps:'6–8' },
+    { name:'Arnold Press', equipment:'Dumbbells + Bench (upright)', reps:'10–12' },
+    { name:'Machine Shoulder Press', equipment:'Shoulder press machine', reps:'10–12' },
+    { name:'Front Raise', equipment:'Dumbbells or plate', reps:'12–15', rest:60 },
+    { name:'Upright Row', equipment:'Barbell or Cable', reps:'12–15', rest:60 },
+  ],
+  'Side Delts': [
+    { name:'Dumbbell Lateral Raise', equipment:'Dumbbells (light)', reps:'15–20', rest:60 },
+    { name:'Cable Lateral Raise', equipment:'Low pulley, one arm', reps:'15–20', rest:60 },
+    { name:'Machine Lateral Raise', equipment:'Lateral raise machine', reps:'12–15', rest:60 },
+  ],
+  'Rear Delts': [
+    { name:'Face Pull', equipment:'High pulley + rope', reps:'15–20', rest:60 },
+    { name:'Rear Delt Fly', equipment:'Dumbbells, bent 45°', reps:'15–20', rest:60 },
+    { name:'Reverse Pec Deck', equipment:'Pec deck (reversed)', reps:'15–20', rest:60 },
+  ],
+  'Triceps': [
+    { name:'Tricep Cable Pushdown', equipment:'High pulley', reps:'12–15', rest:75 },
+    { name:'Overhead Tricep Extension', equipment:'Dumbbell or cable rope', reps:'12–15', rest:60 },
+    { name:'Skull Crushers', equipment:'EZ bar + Bench', reps:'10–12', rest:75 },
+    { name:'Close-Grip Bench Press', equipment:'Barbell + Bench', reps:'8–10' },
+    { name:'Dips', equipment:'Dip bars (upright torso)', reps:'8–10' },
+    { name:'Tricep Kickback', equipment:'Dumbbells (light)', reps:'12–15', rest:60 },
+  ],
+  'Biceps': [
+    { name:'Dumbbell Curl', equipment:'Dumbbells', reps:'12', rest:75 },
+    { name:'Barbell Curl', equipment:'Barbell or EZ bar', reps:'10–12', rest:75 },
+    { name:'Hammer Curl', equipment:'Dumbbells (neutral grip)', reps:'12', rest:75 },
+    { name:'Preacher Curl', equipment:'Preacher bench + EZ bar', reps:'10–12', rest:75 },
+    { name:'Cable Curl', equipment:'Low pulley', reps:'12–15', rest:60 },
+    { name:'Incline Dumbbell Curl', equipment:'Dumbbells + Bench (45°)', reps:'10–12', rest:75 },
+  ],
+  'Quads': [
+    { name:'Back Squat', equipment:'Barbell + Rack', reps:'6–8', rest:120 },
+    { name:'Front Squat', equipment:'Barbell + Rack', reps:'8–10', rest:120 },
+    { name:'Goblet Squat', equipment:'Dumbbell', reps:'10–12' },
+    { name:'Leg Press', equipment:'Leg press machine', reps:'10–12' },
+    { name:'Bulgarian Split Squat', equipment:'Dumbbells + Bench', reps:'10–12 each' },
+    { name:'Walking Lunge', equipment:'Dumbbells', reps:'12 each' },
+    { name:'Step-ups', equipment:'Dumbbells + Box/Bench', reps:'10–12 each' },
+    { name:'Leg Extension', equipment:'Leg extension machine', reps:'12–15', rest:60 },
+    { name:'Hack Squat', equipment:'Hack squat machine', reps:'10–12' },
+  ],
+  'Hamstrings': [
+    { name:'Romanian Deadlift', equipment:'Barbell or Dumbbells', reps:'10' },
+    { name:'Deadlift', equipment:'Barbell', reps:'5–6', rest:150 },
+    { name:'Lying Leg Curl', equipment:'Leg curl machine', reps:'12–15', rest:60 },
+    { name:'Seated Leg Curl', equipment:'Leg curl machine', reps:'12–15', rest:60 },
+    { name:'Good Morning', equipment:'Barbell', reps:'10–12' },
+    { name:'Hip Thrust', equipment:'Barbell + Bench', reps:'10–12' },
+    { name:'Glute Bridge', equipment:'Bodyweight or Barbell', reps:'12–15', rest:60 },
+    { name:'Kettlebell Swing', equipment:'Kettlebell', track:'reps', reps:'15', rest:60 },
+  ],
+  'Calves': [
+    { name:'Standing Calf Raise', equipment:'Machine or Dumbbells', reps:'12–15', rest:60 },
+    { name:'Seated Calf Raise', equipment:'Calf raise machine', reps:'15–20', rest:60 },
+    { name:'Single-Leg Calf Raise', equipment:'Bodyweight + step', reps:'15–20 each', rest:60 },
+  ],
+  'Core': [
+    { name:'Plank', equipment:'Bodyweight / mat', track:'time', workSec:60, rest:45 },
+    { name:'Side Plank', equipment:'Bodyweight / mat', track:'time', workSec:45, rest:45 },
+    { name:'Hollow Hold', equipment:'Bodyweight / mat', track:'time', workSec:40, rest:45 },
+    { name:'Hanging Leg Raise', equipment:'Pull-up bar', track:'reps', reps:'10–12', rest:60 },
+    { name:'Ab Wheel Rollout', equipment:'Ab wheel', track:'reps', reps:'8–12', rest:60 },
+    { name:'Cable Crunch', equipment:'High pulley + rope', reps:'12–15', rest:60 },
+    { name:'Russian Twist', equipment:'Dumbbell or plate', track:'reps', reps:'20 total', rest:45 },
+    { name:'Dead Bug', equipment:'Bodyweight / mat', track:'reps', reps:'10 each', rest:45 },
+  ],
+  'Conditioning': [
+    { name:'Burpees', equipment:'Bodyweight', track:'reps', reps:'8', rest:90 },
+    { name:'Punching Bag Rounds', equipment:'Punching bag', track:'interval', rounds:3, workSec:180, restSec:60 },
+    { name:'Jump Rope', equipment:'Skipping rope', track:'interval', rounds:5, workSec:120, restSec:45 },
+    { name:'Assault Bike Intervals', equipment:'Air bike', track:'interval', rounds:8, workSec:30, restSec:60 },
+    { name:'Sprint Intervals', equipment:'Treadmill or track', track:'interval', rounds:6, workSec:30, restSec:90 },
+    { name:'Rowing Erg', equipment:'Rowing machine', track:'time', workSec:300, sets:2, rest:90 },
+    { name:'Battle Ropes', equipment:'Battle ropes', track:'time', workSec:30, sets:4, rest:60 },
+    { name:'Mountain Climbers', equipment:'Bodyweight', track:'reps', reps:'20 total', rest:45 },
+  ],
+};
+// Turn a library entry into a routine exercise, filling in type-appropriate defaults.
+function libToExercise(muscle, e){
+  const track = e.track || 'weight';
+  const ex = { name: e.name };
+  if(track!=='weight') ex.track = track;
+  if(track==='interval'){
+    ex.sets = 1;
+    ex.rounds = e.rounds||3; ex.workSec = e.workSec||180; ex.restSec = e.restSec!=null?e.restSec:60; ex.rest = 0;
+  } else if(track==='time'){
+    ex.sets = e.sets||3; ex.workSec = e.workSec||45; ex.rest = e.rest!=null?e.rest:45;
+  } else {
+    ex.sets = e.sets||3; ex.reps = e.reps||'10–12'; ex.rest = e.rest!=null?e.rest:90;
+  }
+  if(e.equipment) ex.equipment = e.equipment;
+  ex.muscle = muscle;
+  return ex;
+}
+function libEntry(muscle, name){ return (EXERCISE_LIBRARY[muscle]||[]).find(e=>e.name===name); }
+// Muscle group an exercise belongs to, preferring its explicit tag.
+function muscleOfEx(ex){ return (ex && ex.muscle) || muscleOf(ex && ex.name); }
+
 function muscleOf(name){
   const n = String(name||'').toLowerCase();
   for(const [re,m] of MUSCLE_RULES){ if(re.test(n)) return m; }
@@ -1525,6 +1923,7 @@ function render(){
   }
   html += renderNav();
   if(state.noteModal) html += renderNoteModal();
+  if(state.exPicker) html += renderExPicker();
   app.innerHTML = html;
   refreshDatalist();
   if(state.timer) updateTimerView();
@@ -1532,6 +1931,7 @@ function render(){
     const ta = document.getElementById('noteText');
     if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
   }
+  if(state.exPicker) pickerFilter();
 }
 
 function dayButtonHTML(d){
@@ -1771,7 +2171,7 @@ function renderSingleBlock(ex, idx, num, accent){
     <div class="ex-top" onclick="toggleBlock(${idx},[${idx}])">
       <div class="ex-num ${allDone?'complete':(open?'active':'')}" style="${open&&!allDone?'background:'+accent:''}">${allDone?'✓':num}</div>
       <div style="flex:1">
-        <div class="ex-name">${esc(ex.name)}</div>
+        <div class="ex-name">${esc(ex.name)}${swapTagHTML(ex)}</div>
         ${ex.equipment?`<div class="ex-equip">${esc(ex.equipment)}</div>`:''}
       </div>
       <div><div class="ex-target" style="color:${accent}">${targetLabel(ex)}</div>
@@ -1785,7 +2185,7 @@ function renderSingleBlock(ex, idx, num, accent){
     for(let s=0;s<total;s++) h += setRowHTML(ex, s, {});
     h += `</div>`;
     if(track!=='time') h += `<button class="add-set" onclick="addExtraSet('${sq(ex.name)}')">+ Add set</button>`;
-    h += noteButtonHTML(ex);
+    h += swapButtonHTML(ex) + noteButtonHTML(ex);
     if(allDone) h += `<div class="finish-banner">✓ Exercise complete${track!=='time'?' — change any picker to adjust a set':''}</div>`;
     h += cuesHTML(ex) + `</div>`;
   }
@@ -1802,7 +2202,7 @@ function renderIntervalBlock(ex, idx, num, accent){
     <div class="ex-top" onclick="toggleBlock(${idx},[${idx}])">
       <div class="ex-num ${done?'complete':(open?'active':'')}" style="${open&&!done?'background:'+accent:''}">${done?'✓':num}</div>
       <div style="flex:1">
-        <div class="ex-name">${esc(ex.name)}<span class="express-tag">INTERVAL</span></div>
+        <div class="ex-name">${esc(ex.name)}${swapTagHTML(ex)}<span class="express-tag">INTERVAL</span></div>
         ${ex.equipment?`<div class="ex-equip">${esc(ex.equipment)}</div>`:''}
       </div>
       <div><div class="ex-target" style="color:${accent}">${rounds} × ${fmtTime(workSec)}</div>
@@ -1833,7 +2233,7 @@ function renderSupersetBlock(exs, ai, bi, num, accent){
     <div class="ex-top" onclick="toggleBlock(${ai},[${ai},${bi}])">
       <div class="ex-num ${allDone?'complete':(open?'active':'')}" style="${open&&!allDone?'background:'+accent:''}">${allDone?'✓':num}</div>
       <div style="flex:1">
-        <div class="ex-name">${esc(A.name)} <span class="ss-plus">+</span> ${esc(B.name)}<span class="ss-tag">SUPERSET</span></div>
+        <div class="ex-name">${esc(A.name)}${swapTagHTML(A)} <span class="ss-plus">+</span> ${esc(B.name)}${swapTagHTML(B)}<span class="ss-tag">SUPERSET</span></div>
         <div class="ex-equip">Alternate · rest only after both</div>
       </div>
       <div><div class="ex-target" style="color:${accent}">⏱ ${restTxt(ssRest)}</div>
@@ -1860,6 +2260,7 @@ function renderSupersetBlock(exs, ai, bi, num, accent){
       });
     }
     h += `<button class="add-set" onclick="addRound('${sq(A.name)}','${sq(B.name)}')">+ Add round</button>`;
+    h += swapButtonHTML(A, true) + swapButtonHTML(B, true);
     h += noteButtonHTML(A, true) + noteButtonHTML(B, true);
     if(allDone) h += `<div class="finish-banner">✓ Superset complete — change any picker to adjust a set</div>`;
     h += cuesHTML2(A, B) + `</div>`;
@@ -1875,7 +2276,7 @@ function ssMini(ex){
 }
 
 function renderSession(){
-  const dayDef = getDay(state.day);
+  const dayDef = sessionDay();
   if(!dayDef){ state.day=null; return renderToday(); }
   const accent = dayDef.color;
   let totSets=0, totDone=0;
@@ -1901,6 +2302,9 @@ function renderSession(){
         : renderSingleBlock(ex, bl.a, i+1, accent);
     } else h += renderSupersetBlock(dayDef.exercises, bl.a, bl.b, i+1, accent);
   });
+  h += `<div class="add-ex-wrap">
+    <button class="add-ex-btn" onclick="openLibrary({mode:'addSession',muscle:'__all__'})">+ Add exercise to this workout</button>
+  </div>`;
   if(dayDef.exercises.length){
     h += `<div class="finish-wrap">
       <button class="finish-btn" onclick="finishWorkout()">✓ Finish workout${totDone?' · '+totDone+' set'+(totDone===1?'':'s'):''}</button>
@@ -2224,6 +2628,7 @@ function renderRoutineEditor(){
               <div class="een">${esc(ex.name)}${ex.superset?'<span class="ss-tag" style="--accent:'+d.color+'">SS</span>':''}</div>
               <div class="ees">${ex.sets} × ${esc(ex.reps)} · ${restTxt(ex.rest)} rest${ex.superset?' · w/ '+esc(ex.superset):''}</div>
             </div>
+            <button class="icon-btn" title="Swap for a same-muscle exercise" onclick="openLibrary({mode:'swapEdit',routineId:'${r.id}',code:'${d.code}',idx:${idx},origName:'${sq(ex.name)}',muscle:'${sq(muscleOfEx(ex))}'})">⇄</button>
             <button class="icon-btn" onclick="moveExercise('${r.id}','${d.code}',${idx},-1)">↑</button>
             <button class="icon-btn" onclick="moveExercise('${r.id}','${d.code}',${idx},1)">↓</button>
             <button class="icon-btn" onclick="deleteExercise('${r.id}','${d.code}',${idx})" style="color:#c66">✕</button>
@@ -2233,7 +2638,10 @@ function renderRoutineEditor(){
       if(state.exForm && state.exForm.code===d.code && (state.exForm.idx===null || state.exForm.idx===undefined)){
         h += renderExForm(r, d, null, null);
       } else {
-        h += `<button class="det-add" style="margin-top:10px" onclick="openExForm('${d.code}',null)">+ Add exercise</button>`;
+        h += `<div style="display:flex;gap:8px;margin-top:10px">
+          <button class="det-add" style="margin:0;flex:1" onclick="openLibrary({mode:'add',routineId:'${r.id}',code:'${d.code}',muscle:'__all__'})">📚 From library</button>
+          <button class="det-add" style="margin:0;flex:1" onclick="openExForm('${d.code}',null)">+ Custom</button>
+        </div>`;
       }
       h += `<div class="det-actions"><button class="danger-btn" onclick="deleteDay('${r.id}','${d.code}')">Remove ${d.code}</button></div>`;
       h += `</div>`;

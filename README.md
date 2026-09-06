@@ -57,7 +57,13 @@ python -m http.server 8000   # then visit http://localhost:8000
   },
   "notes": {                  // optional, one note per exercise
     "Dumbbell Bench Press": "Left shoulder tight — drop a notch next time"
-  }
+  },
+  "swaps": {                  // optional, substitutions made during the workout
+    "Pull-ups": { "name": "Lat Pulldown", "sets": 4, "muscle": "Back" }
+  },
+  "extraEx": [                // optional, exercises added on the fly that day
+    { "name": "Seated Calf Raise", "sets": 3, "reps": "15–20", "muscle": "Calves" }
+  ]
 }
 ```
 
@@ -80,6 +86,42 @@ rather than being discarded.
 
 While a workout is in progress, any already-logged set stays editable in place —
 the weight/reps pickers are live, and changing one updates the stored set.
+
+## Exercise library & swapping
+
+`EXERCISE_LIBRARY` in `index.html` is a curated list of established movements
+grouped by the same muscle groups the volume balance uses (Chest, Back,
+Shoulders, Side Delts, Rear Delts, Triceps, Biceps, Quads, Hamstrings, Calves,
+Core, Conditioning). Each entry carries its equipment and sensible set/rep/rest
+defaults; anything added from it is stamped with an explicit `muscle`, so volume
+balance and swapping never depend on name-matching.
+
+**Adding** happens in two places, mirroring the swap split below:
+
+- **During a workout** — **+ Add exercise to this workout** at the bottom of the
+  session appends a library exercise to today only. The routine is untouched, the
+  card is tagged **+ ADDED**, and a **remove** link drops it again (discarding any
+  sets logged against it). Stored in `ActiveSession.extraEx`.
+- **In the routine editor** — Manage routines → edit a day → **📚 From library**
+  adds it permanently. **+ Custom** still opens the free-text form for anything
+  not in the list.
+
+Because history is keyed by exercise name, the same name can't appear twice in
+one workout — adding a duplicate is rejected with a toast.
+
+**Swapping** happens in two places:
+
+- **During a workout** — **⇄ Swap exercise** on the exercise card, defaulted to
+  that exercise's muscle group (e.g. Pull-ups → Lat Pulldown when the bar is
+  taken). This applies to the current workout *only*: the routine is untouched,
+  the card is marked **⇄ SWAP**, and an **undo** restores the original. Sets are
+  logged under the exercise you actually did, so progress lands on the right
+  chart. Swaps live in `ActiveSession.swaps` (keyed by the original routine name,
+  so swapping twice still resolves to one slot) and are recorded on the session
+  so continuing that workout later keeps them.
+- **In the routine editor** — the **⇄** button on an exercise row swaps it
+  permanently, keeping your programmed sets/reps/rest when the tracking type is
+  unchanged, and repointing any superset partner at the new name.
 
 ## Exercise notes
 
