@@ -24,6 +24,7 @@ python -m http.server 8000   # then visit http://localhost:8000
 | `routines`       | `Routine[]` | All workout routines you've defined |
 | `activeRoutine`  | `string` (routine id) | Which routine drives the Today tab |
 | `workoutHistory` | `Session[]` | Every logged session |
+| `activeSession`  | `ActiveSession \| null` | The workout currently in progress (see below) |
 
 ```jsonc
 // Routine
@@ -53,9 +54,39 @@ python -m http.server 8000   # then visit http://localhost:8000
   "routineId": "seed-ppc",
   "exercises": {              // keyed by EXERCISE NAME (see below)
     "Dumbbell Bench Press": [ { "w": 30, "reps": 9 }, { "w": 30, "reps": 8 } ]
+  },
+  "notes": {                  // optional, one note per exercise
+    "Dumbbell Bench Press": "Left shoulder tight — drop a notch next time"
   }
 }
 ```
+
+## In-progress workouts
+
+Starting a day creates an `activeSession` in storage, rewritten on **every**
+logged/edited set, note and toggle — so a refresh, a phone lock or an accidental
+back-swipe never loses progress. Leaving the day (back button) deliberately does
+*not* finalise it; the Today tab shows a **Resume** card instead.
+
+A workout is written to `workoutHistory` only by the **Finish workout** button at
+the bottom of the day. Reopening that day later the same calendar day loads the
+saved session back for editing and finishing again *overwrites the same history
+entry* (matched on `date`) rather than logging a second workout — so
+`ActiveSession.resumeDate` is the date of the entry being continued, and
+`startedAt` is when the workout began (it becomes the entry's `date`).
+
+A session left open from a previous day is committed to history on next launch
+rather than being discarded.
+
+While a workout is in progress, any already-logged set stays editable in place —
+the weight/reps pickers are live, and changing one updates the stored set.
+
+## Exercise notes
+
+Each exercise takes one free-text note per workout (not per set), via **Add note**
+below *Add set*. The most recent note for that exercise from any earlier session
+appears as a pressable **📝 Last note** pill next to the Last/PR line, and notes
+are shown read-only in the History detail view.
 
 ## Key design decision: history is keyed by exercise *name*
 

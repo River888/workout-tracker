@@ -76,7 +76,7 @@
   .sess-prog > div { height: 100%; border-radius: 999px; transition: width 0.4s cubic-bezier(.4,0,.2,1); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent); }
 
   .ex-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); margin: 10px 16px; overflow: hidden; transition: opacity 0.2s, border-color 0.2s, box-shadow 0.2s; }
-  .ex-card.done { opacity: 0.5; }
+  .ex-card.done { border-color: color-mix(in srgb, var(--cond) 32%, var(--border)); }
   .ex-card.open { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); box-shadow: var(--sh-2), 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent); }
   .ex-card.ss-card.open { border-color: color-mix(in srgb, var(--accent) 70%, var(--border)); }
   .ex-top { display: flex; align-items: center; padding: 16px; gap: 13px; }
@@ -133,7 +133,7 @@
   .picker:focus { outline: none; }
   .picker:disabled { color: #fff; opacity: 1; }
   .pwrap .caret { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); color: var(--dim); font-size: 9px; pointer-events: none; }
-  .set-row.logged-row .pwrap .caret { display: none; }
+  .set-row.logged-row .pwrap .caret { opacity: 0.45; }
   .set-log-btn { background: var(--accent); color: #fff; border-radius: var(--r-sm); padding: 0 6px; min-height: 56px; width: 46px; flex-shrink: 0; font-weight: 800; font-size: 14px; transition: transform 0.12s, background 0.15s; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 35%, transparent); }
   .set-log-btn:active { transform: scale(0.92); }
   .set-log-btn.logged { background: color-mix(in srgb, var(--cond) 18%, var(--card2)); color: var(--cond); font-size: 20px; box-shadow: none; }
@@ -144,6 +144,36 @@
   .last-time b { color: var(--text); font-weight: 700; }
   .finish-banner { margin-top: 12px; padding: 12px; background: color-mix(in srgb, var(--cond) 12%, var(--bg2)); border: 1px solid color-mix(in srgb, var(--cond) 32%, transparent); border-radius: var(--r-sm); font-size: 12.5px; color: var(--cond); font-weight: 700; text-align: center; }
   .empty-ex { font-size: 13.5px; color: var(--dim); text-align: center; padding: 32px 16px; line-height: 1.6; }
+
+  /* Notes */
+  .note-btn { background: var(--card2); border: 1px dashed var(--border2); color: var(--muted); font-size: 13px; padding: 13px; border-radius: var(--r-sm); width: 100%; margin-top: 8px; font-weight: 600; }
+  .note-btn:active { background: var(--elev); }
+  .note-btn.has { border-style: solid; border-color: color-mix(in srgb, var(--pr) 40%, var(--border2)); color: var(--pr); }
+  .last-time .pill.note { border-color: color-mix(in srgb, var(--pr) 40%, var(--border)); color: var(--pr); cursor: pointer; }
+  .note-preview { font-size: 12.5px; color: var(--muted); background: var(--bg2); border: 1px solid var(--border); border-left: 3px solid var(--pr); border-radius: var(--r-sm); padding: 10px 12px; margin-bottom: 12px; line-height: 1.5; white-space: pre-wrap; }
+  .modal-back { position: fixed; inset: 0; background: rgba(6,7,9,0.82); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 120; padding: 22px; }
+  .modal { background: var(--card); border: 1px solid var(--border2); border-radius: var(--r); width: 100%; max-width: 440px; padding: 18px; }
+  .modal h3 { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
+  .modal .msub { font-size: 11.5px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; margin-top: 4px; }
+  .modal textarea { width: 100%; min-height: 130px; margin-top: 14px; background: var(--card2); border: 1px solid var(--border); border-radius: var(--r-sm); color: var(--text); font: inherit; font-size: 15px; padding: 12px; line-height: 1.5; resize: vertical; }
+  .modal textarea:focus { outline: none; border-color: var(--accent); }
+  .modal .mbody { margin-top: 14px; font-size: 14.5px; line-height: 1.6; white-space: pre-wrap; color: var(--text); background: var(--card2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 13px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .modal-actions button { flex: 1; border-radius: var(--r-sm); padding: 14px; font-size: 14px; font-weight: 700; background: var(--card2); border: 1px solid var(--border2); color: var(--muted); }
+  .modal-actions button.primary { background: var(--cond); border-color: var(--cond); color: #06210f; }
+  .modal-actions button.warn { background: color-mix(in srgb, var(--danger) 10%, var(--card)); border-color: color-mix(in srgb, var(--danger) 30%, transparent); color: var(--danger); flex: 0 0 auto; padding: 14px 16px; }
+
+  /* Finish workout + resume */
+  .finish-wrap { padding: 6px 16px 26px; }
+  .finish-btn { width: 100%; background: var(--cond); color: #06210f; border-radius: var(--r-sm); padding: 17px; font-size: 16px; font-weight: 800; box-shadow: 0 6px 20px color-mix(in srgb, var(--cond) 32%, transparent); }
+  .finish-btn:active { transform: scale(0.985); }
+  .finish-note { font-size: 11.5px; color: var(--dim); text-align: center; margin-top: 10px; line-height: 1.5; }
+  .resume-card { background: color-mix(in srgb, var(--cond) 10%, var(--card)); border: 1px solid color-mix(in srgb, var(--cond) 38%, var(--border)); border-radius: var(--r); padding: 15px 16px; margin-bottom: 14px; display: flex; align-items: center; gap: 13px; }
+  .resume-card .rtxt { flex: 1; }
+  .resume-card .rlbl { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cond); }
+  .resume-card .rname { font-size: 16px; font-weight: 800; margin-top: 4px; letter-spacing: -0.02em; }
+  .resume-card .rmeta { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+  .resume-card .rgo { background: var(--cond); color: #06210f; border-radius: var(--r-sm); padding: 13px 16px; font-weight: 800; font-size: 14px; flex-shrink: 0; }
 
   /* Superset block */
   .ss-info { display: flex; flex-direction: column; gap: 7px; margin-bottom: 4px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
@@ -235,7 +265,6 @@
 
   /* Tips / balance */
   .info-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 17px; margin-bottom: 12px; }
-  .info-card .ic { font-size: 22px; margin-bottom: 9px; }
   .info-card h4 { font-size: 14.5px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.01em; }
   .info-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
   .bal-row { margin-bottom: 15px; }
@@ -371,14 +400,6 @@ const SEED_ROUTINE = {
   ]
 };
 
-const TIPS = [
-  { ic: '⏱', t: 'Keep sessions tight', b: 'Aim for 40–55 min of focused work. Intensity and consistency beat marathon sessions, especially when fasted.' },
-  { ic: '🥛', t: 'Protein after training', b: 'A protein-rich meal within ~60 min of finishing supports recovery and muscle retention.' },
-  { ic: '⚡', t: 'Prime with electrolytes or black coffee', b: 'Supports performance without breaking a fast. Sodium especially helps with fasted strength.' },
-  { ic: '📈', t: 'Progressive overload', b: 'Every 1–2 weeks, add a rep or nudge the weight up one notch on your main lifts. This is what drives growth.' },
-  { ic: '🚫', t: 'Leave reps in reserve on compounds', b: 'Stop 1–2 reps short of failure on the big lifts. Save true failure for isolation work.' },
-  { ic: '😴', t: 'Recovery is the multiplier', b: 'Sleep and steady training frequency move the needle more than any single workout.' },
-];
 // ================================================================
 //  STORAGE  (localStorage when available, in-memory fallback)
 // ================================================================
@@ -515,21 +536,26 @@ function extraFor(name){ return (state._extra && state._extra[name]) || 0; }
 // ---- history (keyed by exercise NAME → progress spans routines) ----
 function getHistory(){ return DB.get('workoutHistory', []); }
 function saveHistory(h){ DB.set('workoutHistory', h); }
-function saveSession(dayCode, logged){
+// Write an in-progress session object into history. Re-committing a session
+// that was already saved (resumeDate) overwrites that entry rather than
+// appending a duplicate, so a workout can be finished, reopened and finished
+// again on the same day.
+function commitSession(sess){
   const clean = {};
-  Object.keys(logged).forEach(k => { const arr = (logged[k]||[]).filter(Boolean); if(arr.length) clean[k] = arr; });
+  Object.keys(sess.logged||{}).forEach(k => { const arr = (sess.logged[k]||[]).filter(Boolean); if(arr.length) clean[k] = arr; });
   if(!Object.keys(clean).length) return false;
-  const r = activeRoutine();
-  const d = getDay(dayCode);
-  const snap = {}, dbn = {};
+  const r = routineById(sess.routineId) || activeRoutine();
+  const d = (r && r.days || []).find(x=>x.code===sess.day);
+  const snap = {}, dbn = {}, notes = {};
   Object.keys(clean).forEach(k => {
-    if(state.snap && (k in state.snap)) snap[k] = state.snap[k];
-    if(state.dbn && (k in state.dbn)) dbn[k] = state.dbn[k];
+    if(sess.snap && (k in sess.snap)) snap[k] = sess.snap[k];
+    if(sess.dbn && (k in sess.dbn)) dbn[k] = sess.dbn[k];
+    const n = sess.notes && sess.notes[k];
+    if(n && n.trim()) notes[k] = n.trim();
   });
-  const h = getHistory();
-  h.push({
-    date: new Date().toISOString(),
-    day: dayCode,
+  const entry = {
+    date: sess.resumeDate || sess.startedAt || new Date().toISOString(),
+    day: sess.day,
     focus: d ? d.focus : '',
     color: d ? d.color : '#888',
     express: d ? !!d.express : false,
@@ -537,10 +563,60 @@ function saveSession(dayCode, logged){
     routineId: r ? r.id : '',
     snap: snap,            // per-exercise dumbbell mode used this session
     dbn: dbn,              // per-exercise dumbbell count (1 or 2)
+    notes: notes,          // per-exercise free-text notes
     exercises: clean
-  });
+  };
+  const h = getHistory();
+  const i = h.findIndex(x => x.date === entry.date);
+  if(i >= 0) h[i] = entry; else h.push(entry);
+  h.sort((a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
   saveHistory(h);
   return true;
+}
+
+// ---- in-progress session (survives a refresh) ----
+function getActive(){ return DB.get('activeSession', null); }
+function clearActive(){ DB.set('activeSession', null); }
+function dayKey(d){ const x = d ? new Date(d) : new Date(); return x.getFullYear()+'-'+x.getMonth()+'-'+x.getDate(); }
+function sessionFromState(){
+  return {
+    day: state.day, routineId: (activeRoutine()||{}).id,
+    startedAt: state.startedAt, resumeDate: state.resumeDate || null,
+    logged: state.logged, snap: state.snap, dbn: state.dbn,
+    extra: state._extra || {}, notes: state.notes || {}, expanded: state.expanded
+  };
+}
+// Called after every logged/edited set so a refresh never loses progress.
+function persistSession(){
+  if(state.day == null) return;
+  DB.set('activeSession', sessionFromState());
+}
+function loadSessionIntoState(sess){
+  state.day = sess.day;
+  state.logged = sess.logged || {};
+  state.snap = sess.snap || {};
+  state.dbn = sess.dbn || {};
+  state._extra = sess.extra || {};
+  state.notes = sess.notes || {};
+  state.startedAt = sess.startedAt || new Date().toISOString();
+  state.resumeDate = sess.resumeDate || null;
+  state.expanded = (sess.expanded == null) ? 0 : sess.expanded;
+}
+// On boot: resume today's in-progress workout, or bank a forgotten one from a
+// previous day so its sets are never silently lost.
+function restoreActiveSession(){
+  const a = getActive();
+  if(!a || !a.day) return;
+  const stale = dayKey(a.startedAt) !== dayKey();
+  const dayStillExists = (routineById(a.routineId)||{days:[]}).days.some(d=>d.code===a.day);
+  if(stale || !dayStillExists){
+    if(commitSession(a)) toast('Unfinished workout saved to history');
+    clearActive();
+    return;
+  }
+  if(a.routineId && a.routineId !== getActiveId()) setActiveId(a.routineId);
+  loadSessionIntoState(a);
+  state.tab = 'today';
 }
 // Look up what was used last time this exercise was done in the same day/routine.
 function lastFieldFor(field, routineId, dayCode, exName){
@@ -556,6 +632,7 @@ function lastDbnFor(routineId, dayCode, exName){ return lastFieldFor('dbn', rout
 function lastSessionSets(exName){
   const h = getHistory();
   for(let i=h.length-1;i>=0;i--){
+    if(h[i].date === state.resumeDate) continue;   // the workout being continued isn't "last time"
     const e = h[i].exercises[exName];
     if(e && e.length){ return { sets: e.filter(Boolean), date: h[i].date }; }
   }
@@ -620,6 +697,7 @@ function deleteSession(date){
 // ================================================================
 let state = {
   tab: 'today', day: null, expanded: 0, logged: {}, timer: null, snap: {}, dbn: {},
+  notes: {}, startedAt: null, resumeDate: null, noteModal: null,
   histTab: 'workouts', openSession: null,
   progView: 'info', editId: null, editDayOpen: null, exForm: null,
 };
@@ -704,11 +782,47 @@ function toast(msg){
 // ================================================================
 //  SESSION ACTIONS
 // ================================================================
+// Find a workout already saved to history today for this day/routine, so it can
+// be reopened and continued instead of starting a second one.
+function todaysSessionFor(dayCode, routineId){
+  const h = getHistory();
+  for(let i=h.length-1;i>=0;i--){
+    const s = h[i];
+    if(s.day===dayCode && s.routineId===routineId && dayKey(s.date)===dayKey()) return s;
+  }
+  return null;
+}
+function hasResumable(dayCode){
+  const rid = (activeRoutine()||{}).id;
+  const a = getActive();
+  if(a && a.day===dayCode && a.routineId===rid && dayKey(a.startedAt)===dayKey()) return true;
+  return !!todaysSessionFor(dayCode, rid);
+}
 function openDay(d){
-  pushNav(); state.day=d; state.expanded=0; state.logged={}; state._extra={};
+  pushNav();
+  const rid = (activeRoutine()||{}).id;
+  const act = getActive();
+  if(act && act.day===d && act.routineId===rid && dayKey(act.startedAt)===dayKey()){
+    loadSessionIntoState(act);            // resume the in-progress workout
+    render();
+    return;
+  }
+  const prev = todaysSessionFor(d, rid);
+  if(prev){
+    loadSessionIntoState({                // continue a workout already saved today
+      day: d, routineId: rid, startedAt: prev.date, resumeDate: prev.date,
+      logged: deepCopy(prev.exercises), snap: deepCopy(prev.snap||{}), dbn: deepCopy(prev.dbn||{}),
+      notes: deepCopy(prev.notes||{}), extra: {}, expanded: 0
+    });
+    persistSession(); render();
+    toast('Continuing today\'s workout');
+    return;
+  }
+  state.day=d; state.expanded=0; state.logged={}; state._extra={}; state.notes={};
+  state.startedAt = new Date().toISOString(); state.resumeDate = null;
   // Seed each exercise's dumbbell mode + count from the last equivalent session, else defaults.
   state.snap = {}; state.dbn = {};
-  const day = getDay(d); const rid = (activeRoutine()||{}).id;
+  const day = getDay(d);
   (day ? day.exercises : []).forEach(ex=>{
     const last = lastSnapFor(rid, d, ex.name);
     state.snap[ex.name] = (last!=null) ? last : !!(isDumbbell(ex) && getSetting('dbSnap', true));
@@ -717,13 +831,24 @@ function openDay(d){
   });
   render();
 }
-function setExSnap(name, on){ if(!state.snap) state.snap={}; state.snap[name]=on; render(); }
+function setExSnap(name, on){ if(!state.snap) state.snap={}; state.snap[name]=on; persistSession(); render(); }
+// Leaving the day keeps the workout open — it's finalised only by finishWorkout().
 function exitDay(){
-  const any = Object.values(state.logged).some(a=>a&&a.filter(Boolean).length);
-  if(any){ if(saveSession(state.day, state.logged)) toast('Session saved'); }
+  persistSession();
   state.day=null; render(); popNavUI();
 }
-function toggleBlock(primary, members){ state.expanded = members.includes(state.expanded) ? -1 : primary; render(); }
+function finishWorkout(){
+  const any = Object.values(state.logged).some(a=>a&&a.filter(Boolean).length);
+  if(!any){
+    if(!confirm('Nothing logged yet. Discard this workout?')) return;
+    clearActive(); state.day=null; render(); popNavUI(); return;
+  }
+  const saved = commitSession(sessionFromState());
+  clearActive();
+  state.day=null; render(); popNavUI();
+  if(saved) toast('Workout saved');
+}
+function toggleBlock(primary, members){ state.expanded = members.includes(state.expanded) ? -1 : primary; persistSession(); render(); }
 function val(id){ const el = document.getElementById(id); return el ? el.value.trim() : ''; }
 
 function blockIncomplete(exs, bl){
@@ -749,7 +874,7 @@ function curEx(exName){ const d=getDay(state.day); return d ? d.exercises.find(e
 function logSet(exName, setIdx, rest){
   const key = exName.replace(/\W/g,'');
   if(state.logged[exName] && state.logged[exName][setIdx]){
-    state.logged[exName][setIdx] = null; render(); return;   // un-log to edit
+    state.logged[exName][setIdx] = null; persistSession(); render(); return;   // un-log to edit
   }
   const exDef = curEx(exName); const track = trackOf(exDef||{});
   const w = val('w_'+key+'_'+setIdx);
@@ -765,6 +890,7 @@ function logSet(exName, setIdx, rest){
   if(!state.logged[exName]) state.logged[exName]=[];
   const prevPR = prFor(exName);
   state.logged[exName][setIdx] = setObj;
+  persistSession();
   const metricNow = setMetric(track, setObj, effDbCount(exDef||{}));
   const isPR = metricNow > prevPR && prevPR>0;
   const prMsg = '🏆 New PR: ' + fmtMetric(track, metricNow) + '!';
@@ -813,6 +939,7 @@ function editCurrentSet(exName, setIdx){
   const track = trackOf(curEx(exName)||{});
   if(track==='reps') state.logged[exName][setIdx] = { reps: val('r_'+key+'_'+setIdx)||0 };
   else state.logged[exName][setIdx] = { w: val('w_'+key+'_'+setIdx)||0, reps: val('r_'+key+'_'+setIdx)||0 };
+  persistSession();
 }
 // ---- timed (plank) and interval (boxing) logging ----
 function startWork(exName, setIdx){
@@ -820,6 +947,7 @@ function startWork(exName, setIdx){
   const workSec = Math.max(1, +ex.workSec||45);
   if(!state.logged[exName]) state.logged[exName]=[];
   state.logged[exName][setIdx] = { sec: workSec };
+  persistSession();
   const exs=getDay(state.day).exercises, blocks=buildBlocks(exs), block=findBlockFor(blocks,exs,exName);
   let nextLabel = '';
   if(loggedCount(exName) >= effSets(ex)) nextLabel = advanceAfter(exs, blocks, block);
@@ -832,6 +960,7 @@ function startInterval(exName){
   const rounds = Math.max(1, +ex.rounds||3), workSec = Math.max(1,+ex.workSec||180), restSec = Math.max(0,+ex.restSec||60);
   if(!state.logged[exName]) state.logged[exName]=[];
   state.logged[exName][0] = { rounds, workSec, restSec };
+  persistSession();
   const phases = [];
   for(let i=0;i<rounds;i++){
     phases.push({ kind:'work', label:'Round '+(i+1)+' of '+rounds, seconds:workSec });
@@ -843,12 +972,12 @@ function startInterval(exName){
 }
 function unlogSet(exName, setIdx){
   if(state.logged[exName]) state.logged[exName][setIdx] = null;
-  render();
+  persistSession(); render();
 }
 function addExtraSet(exName){
   if(!state.logged[exName]) state.logged[exName]=[];
   state._extra = state._extra||{}; state._extra[exName]=(state._extra[exName]||0)+1;
-  render();
+  persistSession(); render();
 }
 function addRound(aName, bName){
   state._extra = state._extra||{};
@@ -856,7 +985,75 @@ function addRound(aName, bName){
   state._extra[bName] = (state._extra[bName]||0)+1;
   if(!state.logged[aName]) state.logged[aName]=[];
   if(!state.logged[bName]) state.logged[bName]=[];
+  persistSession(); render();
+}
+
+// ================================================================
+//  PER-EXERCISE NOTES
+// ================================================================
+function noteFor(exName){ return (state.notes && state.notes[exName]) || ''; }
+// Most recent note for this exercise from any past session.
+function lastNoteFor(exName){
+  const h = getHistory();
+  for(let i=h.length-1;i>=0;i--){
+    const s = h[i];
+    if(s.date===state.resumeDate) continue;          // that's the session we're editing
+    const n = s.notes && s.notes[exName];
+    if(n && n.trim()) return { text: n.trim(), date: s.date };
+  }
+  return null;
+}
+function openNoteEdit(exName){
+  if(!state.noteModal) pushNav();
+  state.noteModal = { name: exName, mode:'edit' }; render();
+}
+function openNoteView(exName){
+  const last = lastNoteFor(exName);
+  if(!last) return;
+  if(!state.noteModal) pushNav();
+  state.noteModal = { name: exName, mode:'view', text: last.text, date: last.date };
   render();
+}
+function closeNote(){ state.noteModal=null; render(); popNavUI(); }
+function saveNote(){
+  const m = state.noteModal; if(!m) return;
+  const el = document.getElementById('noteText');
+  const txt = el ? el.value.trim() : '';
+  if(!state.notes) state.notes = {};
+  if(txt) state.notes[m.name] = txt; else delete state.notes[m.name];
+  state.noteModal = null;
+  persistSession(); render(); popNavUI();
+  toast(txt ? 'Note saved' : 'Note cleared');
+}
+function renderNoteModal(){
+  const m = state.noteModal; if(!m) return '';
+  if(m.mode==='view'){
+    return `<div class="modal-back" onclick="if(event.target===this)closeNote()">
+      <div class="modal">
+        <h3>${esc(m.name)}</h3>
+        <div class="msub">Note · ${fmtDate(m.date,{weekday:'short',month:'short',day:'numeric',year:'numeric'})}</div>
+        <div class="mbody">${esc(m.text)}</div>
+        <div class="modal-actions">
+          <button onclick="closeNote()">Close</button>
+          ${state.day!=null?`<button class="primary" onclick="openNoteEdit('${sq(m.name)}')">Edit this session's note</button>`:''}
+        </div>
+      </div></div>`;
+  }
+  return `<div class="modal-back" onclick="if(event.target===this)closeNote()">
+    <div class="modal">
+      <h3>${esc(m.name)}</h3>
+      <div class="msub">Note for this workout</div>
+      <textarea id="noteText" placeholder="Form cues, how it felt, what to try next time…">${esc(noteFor(m.name))}</textarea>
+      <div class="modal-actions">
+        <button onclick="closeNote()">Cancel</button>
+        <button class="primary" onclick="saveNote()">Save note</button>
+      </div>
+    </div></div>`;
+}
+function noteButtonHTML(ex, showName){
+  const has = !!noteFor(ex.name);
+  const what = showName ? ' · '+esc(ex.name) : '';
+  return `<button class="note-btn ${has?'has':''}" onclick="openNoteEdit('${sq(ex.name)}')">📝 ${has?'Edit note':'Add note'}${what}</button>`;
 }
 
 // ================================================================
@@ -877,9 +1074,10 @@ window.addEventListener('popstate', () => {
   if(_ignoreNextPop){ _ignoreNextPop = false; return; }
   if(_navDepth > 0) _navDepth--;
   // Navigate back within the app
-  if(state.day !== null){
-    const any = Object.values(state.logged).some(a => a && a.filter(Boolean).length);
-    if(any){ if(saveSession(state.day, state.logged)) toast('Session saved'); }
+  if(state.noteModal){
+    state.noteModal = null; render();
+  } else if(state.day !== null){
+    persistSession();       // stays in progress — finish it with the Finish button
     state.day = null; render();
   } else if(state.openSession !== null){
     state.openSession = null; render();
@@ -1326,18 +1524,24 @@ function render(){
     else html += renderProgramInfo();
   }
   html += renderNav();
+  if(state.noteModal) html += renderNoteModal();
   app.innerHTML = html;
   refreshDatalist();
   if(state.timer) updateTimerView();
+  if(state.noteModal && state.noteModal.mode==='edit'){
+    const ta = document.getElementById('noteText');
+    if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+  }
 }
 
 function dayButtonHTML(d){
   const title = d.express ? esc(d.focus) : 'Day '+d.code;
   const sub = d.express ? 'Full Body' : esc(d.focus);
+  const resumable = hasResumable(d.code);
   return `<button class="day-btn" style="background:${d.color}" onclick="openDay('${d.code}')">
     <div class="big">${title}</div>
     <div class="small">${sub}</div>
-    <div class="meta">${d.exercises.length} ex${d.duration?' · '+esc(d.duration):''}</div>
+    <div class="meta">${resumable ? '↻ Continue today\'s' : d.exercises.length+' ex'+(d.duration?' · '+esc(d.duration):'')}</div>
   </button>`;
 }
 
@@ -1353,7 +1557,23 @@ function renderToday(){
   if(!storageOK){
     h += `<div class="storage-warn">⚠️ Running in preview mode — history won't persist here. Save this file to your device and open it directly for full saving.</div>`;
   }
-  h += `<div class="pad"><div class="routine-name">📋 ${esc(r.name)}</div>`;
+  h += `<div class="pad">`;
+  const act = getActive();
+  if(act && act.day && dayKey(act.startedAt)===dayKey()){
+    const ad = (routineById(act.routineId)||r).days.find(d=>d.code===act.day);
+    const sets = Object.values(act.logged||{}).reduce((a,arr)=>a+(arr||[]).filter(Boolean).length,0);
+    if(ad){
+      h += `<div class="resume-card">
+        <div class="rtxt">
+          <div class="rlbl">In progress</div>
+          <div class="rname" style="color:${ad.color}">${ad.express?esc(ad.focus):'Day '+ad.code+' · '+esc(ad.focus)}</div>
+          <div class="rmeta">${sets} set${sets===1?'':'s'} logged · started ${new Date(act.startedAt).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})}</div>
+        </div>
+        <button class="rgo" onclick="openDay('${ad.code}')">Resume</button>
+      </div>`;
+    }
+  }
+  h += `<div class="routine-name">📋 ${esc(r.name)}</div>`;
   if(!r.days.length){
     h += `<div class="empty-ex">This routine has no days yet.<br>Add some in Programme → Manage routines.</div>`;
   }
@@ -1399,7 +1619,17 @@ function lastPRLine(ex){
   return `<div class="last-time">
     <span class="pill">Last: <b>${esc(lastTxt)}</b></span>
     ${pr?`<span class="pill">${prLabel}: <b style="color:var(--pr)">${esc(fmtMetric(track, pr))}</b></span>`:''}
-  </div>`;
+    ${lastNotePillHTML(ex.name)}
+  </div>` + notePreviewHTML(ex.name);
+}
+// Pressable pill linking to the most recent note recorded for this exercise.
+function lastNotePillHTML(exName){
+  const last = lastNoteFor(exName);
+  return last ? `<span class="pill note" onclick="openNoteView('${sq(exName)}')">📝 Last note</span>` : '';
+}
+function notePreviewHTML(exName){
+  const n = noteFor(exName);
+  return n ? `<div class="note-preview">${esc(n)}</div>` : '';
 }
 function cuesHTML(ex){
   if(!ex.cues && !ex.why) return '';
@@ -1446,7 +1676,7 @@ function setRowHTML(ex, s, opts){
   const lastReps = ls && ls.sets.length ? ls.sets[ls.sets.length-1].reps : '';
   let rDef = done ? done.reps : (lastReps!=='' ? lastReps : (parseInt(ex.reps)||10));
   const rVal = isNaN(parseFloat(rDef)) ? '10' : String(parseFloat(rDef));
-  const rSel = `<select class="picker" id="r_${key}_${s}" data-prev-val="${rVal}" ${done?'disabled':''} onchange="onPick(this,'${sq(ex.name)}',${s},'reps')">`+
+  const rSel = `<select class="picker" id="r_${key}_${s}" data-prev-val="${rVal}" onchange="onPick(this,'${sq(ex.name)}',${s},'reps')">`+
     pickerOptsHTML(REP_OPTS, rVal)+`</select>`;
 
   // ---- reps only (e.g. burpees): reps picker + steppers, no weight ----
@@ -1471,7 +1701,7 @@ function setRowHTML(ex, s, opts){
   else if(lastW!=='') wDef = lastW;
   else wDef = isDumbbell(ex) ? 10 : (isBodyweight(ex) ? 0 : 20);
   const wVal = isNaN(parseFloat(wDef)) ? '' : String(parseFloat(wDef));
-  const wSel = `<select class="picker" id="w_${key}_${s}" data-prev-val="${wVal}" ${done?'disabled':''} onchange="onPick(this,'${sq(ex.name)}',${s},'weight')">`+
+  const wSel = `<select class="picker" id="w_${key}_${s}" data-prev-val="${wVal}" onchange="onPick(this,'${sq(ex.name)}',${s},'weight')">`+
     pickerOptsHTML(wOpts, wVal)+`</select>`;
 
   return `<div class="set-row ${done?'logged-row':''} ${opts.awaiting?'awaiting':''}">
@@ -1497,7 +1727,7 @@ function wHeadLabel(ex){
   if(!snapOn(ex.name)) return 'Weight (kg)';
   return effDbCount(ex)===2 ? 'Weight · kg/ea' : 'Weight (kg)';
 }
-function setExDbn(name, n){ if(!state.dbn) state.dbn={}; state.dbn[name]=n; render(); }
+function setExDbn(name, n){ if(!state.dbn) state.dbn={}; state.dbn[name]=n; persistSession(); render(); }
 // Per-exercise dumbbell/other weight-mode switch (+ 1×/2× count) shown in the session.
 function snapToggleHTML(ex, showName){
   if(trackOf(ex)!=='weight') return '';                // only weighted lifts
@@ -1555,7 +1785,8 @@ function renderSingleBlock(ex, idx, num, accent){
     for(let s=0;s<total;s++) h += setRowHTML(ex, s, {});
     h += `</div>`;
     if(track!=='time') h += `<button class="add-set" onclick="addExtraSet('${sq(ex.name)}')">+ Add set</button>`;
-    if(allDone) h += `<div class="finish-banner">✓ Exercise complete${track!=='time'?' — tap a ✓ to fix a set':''}</div>`;
+    h += noteButtonHTML(ex);
+    if(allDone) h += `<div class="finish-banner">✓ Exercise complete${track!=='time'?' — change any picker to adjust a set':''}</div>`;
     h += cuesHTML(ex) + `</div>`;
   }
   h += `</div>`;
@@ -1629,7 +1860,8 @@ function renderSupersetBlock(exs, ai, bi, num, accent){
       });
     }
     h += `<button class="add-set" onclick="addRound('${sq(A.name)}','${sq(B.name)}')">+ Add round</button>`;
-    if(allDone) h += `<div class="finish-banner">✓ Superset complete — tap a ✓ to fix a set</div>`;
+    h += noteButtonHTML(A, true) + noteButtonHTML(B, true);
+    if(allDone) h += `<div class="finish-banner">✓ Superset complete — change any picker to adjust a set</div>`;
     h += cuesHTML2(A, B) + `</div>`;
   }
   h += `</div>`;
@@ -1638,7 +1870,8 @@ function renderSupersetBlock(exs, ai, bi, num, accent){
 function ssMini(ex){
   const ls = lastSessionSets(ex.name); const pr = prFor(ex.name);
   return `<div class="ss-mini"><div class="ss-mini-n">${esc(ex.name)}</div>
-    <div class="ss-mini-v">Last ${ls? esc(ls.sets.map(x=>x.w+'×'+x.reps).join(', ')) : '—'}${pr?' · PR '+pr+'kg':''}</div></div>`;
+    <div class="ss-mini-v">Last ${ls? esc(ls.sets.map(x=>x.w+'×'+x.reps).join(', ')) : '—'}${pr?' · PR '+pr+'kg':''}</div></div>`
+    + (lastNoteFor(ex.name) || noteFor(ex.name) ? `<div class="last-time" style="margin:0">${lastNotePillHTML(ex.name)}</div>`+notePreviewHTML(ex.name) : '');
 }
 
 function renderSession(){
@@ -1651,7 +1884,7 @@ function renderSession(){
   const title = dayDef.express ? esc(dayDef.focus) : 'Day '+state.day+' · '+esc(dayDef.focus);
   let h = `<div style="--accent:${accent}">
     <div class="sess-head">
-      <button class="back" onclick="exitDay()">‹ Done &amp; save</button>
+      <button class="back" onclick="exitDay()">‹ Back</button>
       <h2 style="color:${accent}">${title}${dayDef.express?'<span class="express-tag">EXPRESS</span>':''}</h2>
       <div class="muscles">${esc(dayDef.muscles)}</div>
       <div class="sess-prog"><div style="width:${pct}%;background:${accent}"></div></div>
@@ -1668,6 +1901,12 @@ function renderSession(){
         : renderSingleBlock(ex, bl.a, i+1, accent);
     } else h += renderSupersetBlock(dayDef.exercises, bl.a, bl.b, i+1, accent);
   });
+  if(dayDef.exercises.length){
+    h += `<div class="finish-wrap">
+      <button class="finish-btn" onclick="finishWorkout()">✓ Finish workout${totDone?' · '+totDone+' set'+(totDone===1?'':'s'):''}</button>
+      <div class="finish-note">Progress saves automatically — leaving keeps this workout open so you can come back to it.</div>
+    </div>`;
+  }
   h += `</div>`;
   return h;
 }
@@ -1770,6 +2009,8 @@ function renderSessionDetail(){
       : track==='interval' ? (top+' rounds') : track==='time' ? ('best '+fmtTime(top)) : ('top '+top+' reps');
     h += `<div class="det-ex">
       <h3>${esc(name)}<span style="font-size:12px;color:var(--muted);font-weight:500">${topLabel}</span></h3>`;
+    const dNote = s.notes && s.notes[name];
+    if(dNote) h += `<div class="note-preview">${esc(dNote)}</div>`;
     sets.forEach((st,idx)=>{
       if(!st) return;
       const dq = `'${state.openSession}','${sq(name)}',${idx},'${skey}','${track}'`;
@@ -1852,16 +2093,13 @@ function renderProgress(){
 function renderProgramInfo(){
   const r = activeRoutine();
   const exTotal = r.days.reduce((a,d)=>a+d.exercises.length,0);
-  let h = `<div class="header"><h1>Programme</h1><div class="sub">Balance, schedule & evidence-based tips</div></div><div class="pad">`;
+  let h = `<div class="header"><h1>Programme</h1><div class="sub">Balance, schedule & routine management</div></div><div class="pad">`;
   h += `<div class="sec-label">Weekly Volume Balance</div>`;
   h += `<div class="info-card">${renderVolumeBalance()}</div>`;
   h += `<div class="sec-label" style="margin-top:22px">Schedule</div>`;
   [['3-Day Week','Tue: A · Wed: B · Fri: C'],['2-Day (even weeks)','A + C'],['2-Day (odd weeks)','B + C'],['Time-crunched','Express X1 + X2']].forEach(s=>{
     h += `<div class="info-card" style="padding:12px 14px"><h4 style="margin-bottom:3px">${s[0]}</h4><p>${s[1]}</p></div>`;
   });
-  h += `<div class="sec-label" style="margin-top:22px">Evidence-Based Tips</div>`;
-  TIPS.forEach(t=>{ h += `<div class="info-card"><div class="ic">${t.ic}</div><h4>${t.t}</h4><p>${t.b}</p></div>`; });
-
   h += `<div class="sec-label" style="margin-top:22px">Routine</div>
     <div class="info-card">
       <h4>${esc(r.name)}</h4>
@@ -2083,6 +2321,7 @@ ensureSeed();
 migrate();
 migrateRename();
 migrateTrack();
+restoreActiveSession();
 render();
 
 if('serviceWorker' in navigator){
