@@ -118,12 +118,27 @@ with the date you last added them. They're hidden once already in the session,
 and only shown on the unfiltered (**All**) view so a muscle chip keeps meaning
 exactly what it says.
 
+A newly added exercise is inserted **directly after whichever card is open**,
+not appended to the bottom — so adding a finisher mid-workout lands where you
+are. With nothing open it appends, and adding under a superset clears both
+halves of the pair.
+
 ## Reordering
 
-**Move up / Move down** on an open exercise card reorders the current workout
-only — the routine is untouched. Ordering works on *blocks*, not individual
-exercises, so a superset pair always travels together and stays adjacent. The
-order is stored as a list of names in `ActiveSession.order` and applied as a
+**Hold an exercise card's header, then drag it up or down.** This reorders the
+current workout only — the routine is untouched.
+
+- Ordering works on *blocks*, not individual exercises, so a superset pair
+  always travels together and can never be split.
+- A ~280 ms hold starts the drag (with a haptic tick). Moving more than 10 px
+  before that cancels it, so ordinary scrolling still works anywhere on a card.
+- The click that trails a drag release is swallowed, so dropping a card doesn't
+  also toggle it open.
+- Dragging near the top or bottom edge auto-scrolls the list.
+- Geometry is tracked in document coordinates, so auto-scrolling can't throw
+  off the drop position, and `render()` runs only once — on drop.
+
+The order is stored as a list of names in `ActiveSession.order` and applied as a
 stable sort, so anything not in the list keeps its relative place. Swapping an
 exercise renames it within the order; removing one drops it.
 

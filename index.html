@@ -226,10 +226,19 @@
   .swap-btn { background: var(--card2); border: 1px dashed var(--border2); color: var(--muted); font-size: 13px; padding: 14px; border-radius: var(--r-sm); width: 100%; margin-top: 8px; font-weight: 650; display: flex; align-items: center; justify-content: center; gap: 7px; transition: background 0.15s, border-color 0.15s; }
   .swap-btn:active { background: var(--elev); }
   .swap-note { font-size: 11.5px; color: var(--dim); margin-top: 7px; text-align: center; }
-  .reorder-row { display: flex; gap: 8px; margin-top: 8px; }
-  .reorder-btn { flex: 1; background: var(--card2); border: 1px dashed var(--border2); color: var(--muted); font-size: 12.5px; font-weight: 650; padding: 13px 10px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.15s, transform 0.16s var(--spring); }
-  .reorder-btn:active:not(:disabled) { background: var(--elev); transform: scale(0.96); }
-  .reorder-btn:disabled { opacity: 0.32; cursor: default; }
+  /* Drag to reorder */
+  .grip { color: var(--dim); display: flex; opacity: 0.45; margin-left: 2px; transition: opacity 0.15s, color 0.15s; }
+  .ex-top { cursor: grab; }
+  .ex-card.drag-arm { transition: transform 0.2s var(--ease); transform: scale(0.985); }
+  .ex-card.drag-card {
+    position: relative; z-index: 60; cursor: grabbing; transition: none;
+    box-shadow: 0 22px 54px rgba(0,0,0,0.72), 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+  }
+  .ex-card.drag-card .grip { opacity: 1; color: var(--accent); }
+  .ex-card.drag-sibling { transition: transform 0.19s var(--ease); }
+  body.dragging { user-select: none; -webkit-user-select: none; }
+  body.dragging .ex-top { cursor: grabbing; }
   .add-ex-wrap { padding: 16px 16px 0; }
   .add-ex-btn { width: 100%; background: var(--card2); border: 1px dashed var(--border2); color: var(--muted); font-size: 14px; font-weight: 700; padding: 16px; border-radius: var(--r); display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.15s, border-color 0.15s; }
   .add-ex-btn:active { background: var(--elev); border-color: var(--muted); }
@@ -504,6 +513,7 @@ const ICONS = {
   zap:'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
   flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5"/>',
   target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  grip:'<circle cx="9" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="5" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="15" cy="19" r="1.6"/>',
 };
 function ico(n, cls){ return `<svg class="${cls||'ic'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||''}</svg>`; }
 // solid variant, for play triangles
@@ -1017,7 +1027,10 @@ function finishWorkout(){
   state.day=null; render(); popNavUI();
   if(saved) toast('Workout saved');
 }
-function toggleBlock(primary, members){ state.expanded = members.includes(state.expanded) ? -1 : primary; persistSession(); render(); }
+function toggleBlock(primary, members){
+  if(Date.now() - _dragEndedAt < 350) return;   // the click that trails a drag release
+  state.expanded = members.includes(state.expanded) ? -1 : primary; persistSession(); render();
+}
 function val(id){ const el = document.getElementById(id); return el ? el.value.trim() : ''; }
 
 function blockIncomplete(exs, bl){
@@ -1329,39 +1342,167 @@ function swapInSession(displayName, muscle, name){
 }
 // ---- reordering, for this workout only ----
 // Works on BLOCKS, not individual exercises, so a superset pair moves together.
+// One rendered .ex-card == one block, so card index == block index.
 function blockIndexFor(blocks, exs, exName){
   return blocks.findIndex(bl => bl.type==='single'
     ? exs[bl.a].name===exName
     : (exs[bl.a].name===exName || exs[bl.b].name===exName));
 }
-function moveSessionBlock(exName, dir){
+function flattenBlocks(blocks, exs){
+  const order = [];
+  blocks.forEach(bl => { order.push(exs[bl.a].name); if(bl.type==='ss') order.push(exs[bl.b].name); });
+  return order;
+}
+// Move block `from` to position `to`, keeping `keepName`'s card expanded.
+function applyBlockMove(from, to, keepName){
+  const d = sessionDay(); if(!d) return false;
+  const exs = d.exercises;
+  const blocks = buildBlocks(exs);
+  if(from < 0 || to < 0 || from >= blocks.length || to >= blocks.length || from === to) return false;
+  const arr = blocks.slice();
+  arr.splice(to, 0, arr.splice(from, 1)[0]);
+  state.order = flattenBlocks(arr, exs);
+  // state.expanded is an index, so re-resolve it against the new order
+  if(keepName){
+    const moved = sessionDay().exercises.findIndex(e=>e.name===keepName);
+    if(moved >= 0) state.expanded = moved;
+  }
+  persistSession();
+  return true;
+}
+// Place a newly added exercise directly after the block that's currently open,
+// instead of dumping it at the bottom of the workout.
+function placeAfter(newName, anchorName){
+  if(!anchorName || anchorName === newName) return;
   const d = sessionDay(); if(!d) return;
   const exs = d.exercises;
   const blocks = buildBlocks(exs);
-  const from = blockIndexFor(blocks, exs, exName);
-  const to = from + dir;
-  if(from < 0 || to < 0 || to >= blocks.length) return;
+  const ai = blockIndexFor(blocks, exs, anchorName);
+  const ni = blockIndexFor(blocks, exs, newName);
+  if(ai < 0 || ni < 0) return;
+  const target = ni < ai ? ai : ai + 1;   // removing before the anchor shifts it down one
+  if(target === ni) return;
   const arr = blocks.slice();
-  arr.splice(to, 0, arr.splice(from, 1)[0]);
-  const order = [];
-  arr.forEach(bl => { order.push(exs[bl.a].name); if(bl.type==='ss') order.push(exs[bl.b].name); });
-  state.order = order;
-  // state.expanded is an index, so re-resolve it against the new order
-  const moved = sessionDay().exercises.findIndex(e=>e.name===exName);
-  if(moved >= 0) state.expanded = moved;
-  persistSession(); render();
+  arr.splice(target, 0, arr.splice(ni, 1)[0]);
+  state.order = flattenBlocks(arr, exs);
 }
-function reorderHTML(exName){
-  const d = sessionDay(); if(!d) return '';
-  const exs = d.exercises;
-  const blocks = buildBlocks(exs);
-  if(blocks.length < 2) return '';
-  const i = blockIndexFor(blocks, exs, exName);
-  if(i < 0) return '';
-  return `<div class="reorder-row">
-    <button class="reorder-btn" ${i<=0?'disabled':''} onclick="moveSessionBlock('${sq(exName)}',-1)">${ico('up','ic-sm')}<span>Move up</span></button>
-    <button class="reorder-btn" ${i>=blocks.length-1?'disabled':''} onclick="moveSessionBlock('${sq(exName)}',1)">${ico('dn','ic-sm')}<span>Move down</span></button>
-  </div>`;
+
+// ================================================================
+//  DRAG TO REORDER  (hold an exercise card's header, then drag)
+// ================================================================
+// Geometry is kept in DOCUMENT coordinates so edge auto-scrolling can't
+// invalidate it mid-drag. render() is only called once, on drop.
+const HOLD_MS = 280, HOLD_SLOP = 10, EDGE = 90, EDGE_SPEED = 12;
+let _drag = null, _holdTimer = null, _dragEndedAt = 0;
+
+function cardDragDown(ev, exName){
+  if(state.day == null || state.timer) return;
+  if(ev.button != null && ev.button !== 0) return;      // right/middle click
+  const card = ev.target.closest ? ev.target.closest('.ex-card') : null;
+  if(!card) return;
+  const x0 = ev.clientX, y0 = ev.clientY;
+  const abort = () => {
+    clearTimeout(_holdTimer); _holdTimer = null;
+    window.removeEventListener('pointermove', watch);
+    window.removeEventListener('pointerup', abort);
+    window.removeEventListener('pointercancel', abort);
+    card.classList.remove('drag-arm');
+  };
+  // any real movement before the hold completes means they're scrolling
+  const watch = m => { if(Math.abs(m.clientY-y0) > HOLD_SLOP || Math.abs(m.clientX-x0) > HOLD_SLOP) abort(); };
+  window.addEventListener('pointermove', watch);
+  window.addEventListener('pointerup', abort);
+  window.addEventListener('pointercancel', abort);
+  card.classList.add('drag-arm');
+  _holdTimer = setTimeout(() => { abort(); dragBegin(card, exName, y0); }, HOLD_MS);
+}
+
+function dragBegin(card, exName, clientY){
+  const cards = [...card.parentElement.children].filter(el => el.classList.contains('ex-card'));
+  const from = cards.indexOf(card);
+  if(from < 0 || cards.length < 2) return;
+  if(navigator.vibrate) navigator.vibrate(18);
+  const sy = window.scrollY;
+  _drag = {
+    card, exName, cards, from, to: from,
+    mids: cards.map(el => { const r = el.getBoundingClientRect(); return r.top + sy + r.height/2; }),
+    slot: card.getBoundingClientRect().height + 10,    // card height + the 10px gap it vacates
+    startDoc: clientY + sy, lastClientY: clientY, raf: 0,
+  };
+  document.body.classList.add('dragging');
+  card.classList.remove('drag-arm');
+  card.classList.add('drag-card');
+  window.addEventListener('pointermove', dragMove);
+  window.addEventListener('pointerup', dragDrop);
+  window.addEventListener('pointercancel', dragDrop);
+  window.addEventListener('touchmove', dragBlockScroll, { passive: false });
+}
+// Non-passive, so the page can't scroll out from under an in-progress drag.
+function dragBlockScroll(e){ if(_drag) e.preventDefault(); }
+
+function dragMove(ev){
+  if(!_drag) return;
+  if(ev.cancelable) ev.preventDefault();
+  _drag.lastClientY = ev.clientY;
+  dragPaint();
+  dragAutoScroll();
+}
+function dragPaint(){
+  const d = _drag; if(!d) return;
+  const dy = (d.lastClientY + window.scrollY) - d.startDoc;
+  d.card.style.transform = `translateY(${dy}px) scale(1.015)`;
+  const centre = d.mids[d.from] + dy;
+  let to = d.from;
+  for(let i=0;i<d.mids.length;i++){
+    if(i === d.from) continue;
+    if(i < d.from && centre < d.mids[i]) to = Math.min(to, i);
+    if(i > d.from && centre > d.mids[i]) to = Math.max(to, i);
+  }
+  if(to !== d.to){ d.to = to; dragShift(); }
+}
+// Open a gap by sliding the cards the dragged one has passed.
+function dragShift(){
+  const { cards, card, from, to, slot } = _drag;
+  cards.forEach((el, i) => {
+    if(el === card) return;
+    let s = 0;
+    if(to > from && i > from && i <= to) s = -slot;
+    else if(to < from && i >= to && i < from) s = slot;
+    el.classList.add('drag-sibling');
+    el.style.transform = s ? `translateY(${s}px)` : '';
+  });
+}
+function dragAutoScroll(){
+  const d = _drag; if(!d) return;
+  const y = d.lastClientY, h = window.innerHeight;
+  const up = y < EDGE, down = y > h - EDGE - 70;        // leave room for the floating nav
+  if(!up && !down){ if(d.raf){ cancelAnimationFrame(d.raf); d.raf = 0; } return; }
+  if(d.raf) return;
+  const step = () => {
+    if(!_drag){ return; }
+    const yy = _drag.lastClientY;
+    const u = yy < EDGE, dn = yy > window.innerHeight - EDGE - 70;
+    if(!u && !dn){ _drag.raf = 0; return; }
+    window.scrollBy(0, u ? -EDGE_SPEED : EDGE_SPEED);
+    dragPaint();
+    _drag.raf = requestAnimationFrame(step);
+  };
+  d.raf = requestAnimationFrame(step);
+}
+function dragDrop(){
+  const d = _drag; if(!d) return;
+  _drag = null;
+  if(d.raf) cancelAnimationFrame(d.raf);
+  window.removeEventListener('pointermove', dragMove);
+  window.removeEventListener('pointerup', dragDrop);
+  window.removeEventListener('pointercancel', dragDrop);
+  window.removeEventListener('touchmove', dragBlockScroll);
+  document.body.classList.remove('dragging');
+  d.card.classList.remove('drag-card');
+  d.cards.forEach(el => { el.style.transform = ''; el.classList.remove('drag-sibling'); });
+  _dragEndedAt = Date.now();                    // suppress the click that follows the release
+  if(d.to !== d.from && applyBlockMove(d.from, d.to, d.exName)) toast('Reordered');
+  render();
 }
 
 // ---- extra exercises, added for this workout only ----
@@ -1372,9 +1513,12 @@ function addSessionExercise(muscle, name){
   const d = sessionDay();
   // history is keyed by exercise name, so one name can only appear once
   if(d && d.exercises.some(e=>e.name===ex.name)){ toast(ex.name+' is already in this workout'); return false; }
+  // remember which card is open — the new exercise slots in right after it
+  const anchor = d && d.exercises[state.expanded] ? d.exercises[state.expanded].name : null;
   if(!state.extraEx) state.extraEx = [];
   state.extraEx.push(ex);
   seedExerciseModes(ex);
+  placeAfter(ex.name, anchor);
   const nd = sessionDay();
   const i = nd.exercises.findIndex(e=>e.name===ex.name);
   if(i>=0) state.expanded = i;
@@ -2403,7 +2547,7 @@ function renderSingleBlock(ex, idx, num, accent){
   const doneCount = logged.filter(Boolean).length;
   const allDone = doneCount>=ex.sets;
   let h = `<div class="ex-card ${allDone?'done':''} ${open?'open':''}" style="--accent:${accent}">
-    <div class="ex-top" onclick="toggleBlock(${idx},[${idx}])">
+    <div class="ex-top" onpointerdown="cardDragDown(event,'${sq(ex.name)}')" onclick="toggleBlock(${idx},[${idx}])">
       <div class="ex-num ${allDone?'complete':(open?'active':'')}" style="${open&&!allDone?'background:'+accent:''}">${allDone?ico('check','ic-sm'):num}</div>
       <div style="flex:1">
         <div class="ex-name">${esc(ex.name)}${swapTagHTML(ex)}</div>
@@ -2412,6 +2556,7 @@ function renderSingleBlock(ex, idx, num, accent){
       <div><div class="ex-target" style="color:${accent}">${targetLabel(ex)}</div>
       <div class="ex-rest">${ico('clock','ic-xs')}<span>${restTxt(ex.rest)}${doneCount?' · '+doneCount+'/'+ex.sets:''}</span></div></div>
       <span class="chev" style="transform:rotate(${open?'90':'0'}deg)">${ico('right','ic-sm')}</span>
+      <span class="grip" title="Hold and drag to reorder">${icoF('grip','ic-sm')}</span>
     </div>`;
   if(open){
     h += `<div class="ex-body">` + lastPRLine(ex) + snapToggleHTML(ex, false) + dbNote(ex) +
@@ -2420,7 +2565,6 @@ function renderSingleBlock(ex, idx, num, accent){
     for(let s=0;s<total;s++) h += setRowHTML(ex, s, {});
     h += `</div>`;
     if(track!=='time') h += `<button class="add-set" onclick="addExtraSet('${sq(ex.name)}')">${ico('plus','ic-sm')}<span>Add set</span></button>`;
-    h += reorderHTML(ex.name);
     h += swapButtonHTML(ex) + noteButtonHTML(ex);
     if(allDone) h += `<div class="finish-banner">${ico('check','ic-sm')}<span>Exercise complete${track!=='time'?' — change any picker to adjust a set':''}</span></div>`;
     h += cuesHTML(ex) + `</div>`;
@@ -2435,7 +2579,7 @@ function renderIntervalBlock(ex, idx, num, accent){
   const rounds = +ex.rounds||3, workSec = +ex.workSec||180, restSec = +ex.restSec||60;
   const total = rounds*workSec + (rounds-1)*restSec;
   let h = `<div class="ex-card ${done?'done':''} ${open?'open':''}" style="--accent:${accent}">
-    <div class="ex-top" onclick="toggleBlock(${idx},[${idx}])">
+    <div class="ex-top" onpointerdown="cardDragDown(event,'${sq(ex.name)}')" onclick="toggleBlock(${idx},[${idx}])">
       <div class="ex-num ${done?'complete':(open?'active':'')}" style="${open&&!done?'background:'+accent:''}">${done?ico('check','ic-sm'):num}</div>
       <div style="flex:1">
         <div class="ex-name">${esc(ex.name)}${swapTagHTML(ex)}<span class="express-tag">INTERVAL</span></div>
@@ -2444,13 +2588,13 @@ function renderIntervalBlock(ex, idx, num, accent){
       <div><div class="ex-target" style="color:${accent}">${rounds} × ${fmtTime(workSec)}</div>
       <div class="ex-rest">rest ${fmtTime(restSec)}</div></div>
       <span class="chev" style="transform:rotate(${open?'90':'0'}deg)">${ico('right','ic-sm')}</span>
+      <span class="grip" title="Hold and drag to reorder">${icoF('grip','ic-sm')}</span>
     </div>`;
   if(open){
     h += `<div class="ex-body">`;
     h += `<div class="last-time"><span class="pill">${rounds} rounds · ${fmtTime(workSec)} work · ${fmtTime(restSec)} rest</span><span class="pill">≈ ${fmtTime(total)} total</span></div>`;
     h += `<div class="db-note">${ico('zap','ic-sm')}<span>Hands-free — it auto-cycles work → rest → next round. Best with sound on.</span></div>`;
     h += `<button class="time-btn ${done?'done':''}" onclick="${done?`unlogSet('${sq(ex.name)}',0)`:`startInterval('${sq(ex.name)}')`}">${done?ico('check')+'Completed — tap to reset':icoF('play','ic-sm')+'Start '+rounds+' rounds'}</button>`;
-    h += reorderHTML(ex.name);
     h += cuesHTML(ex) + `</div>`;
   }
   h += `</div>`;
@@ -2467,7 +2611,7 @@ function renderSupersetBlock(exs, ai, bi, num, accent){
   const totalSets = A.sets + B.sets;
   const ssRest = Math.max(A.rest, B.rest);
   let h = `<div class="ex-card ss-card ${allDone?'done':''} ${open?'open':''}" style="--accent:${accent}">
-    <div class="ex-top" onclick="toggleBlock(${ai},[${ai},${bi}])">
+    <div class="ex-top" onpointerdown="cardDragDown(event,'${sq(A.name)}')" onclick="toggleBlock(${ai},[${ai},${bi}])">
       <div class="ex-num ${allDone?'complete':(open?'active':'')}" style="${open&&!allDone?'background:'+accent:''}">${allDone?ico('check','ic-sm'):num}</div>
       <div style="flex:1">
         <div class="ex-name">${esc(A.name)}${swapTagHTML(A)} <span class="ss-plus">+</span> ${esc(B.name)}${swapTagHTML(B)}<span class="ss-tag">SUPERSET</span></div>
@@ -2476,6 +2620,7 @@ function renderSupersetBlock(exs, ai, bi, num, accent){
       <div><div class="ex-target ss-rest" style="color:${accent}">${ico('clock','ic-xs')}${restTxt(ssRest)}</div>
       <div class="ex-rest">${totalDone}/${totalSets} sets</div></div>
       <span class="chev" style="transform:rotate(${open?'90':'0'}deg)">${ico('right','ic-sm')}</span>
+      <span class="grip" title="Hold and drag to reorder">${icoF('grip','ic-sm')}</span>
     </div>`;
   if(open){
     h += `<div class="ex-body">`;
@@ -2497,7 +2642,6 @@ function renderSupersetBlock(exs, ai, bi, num, accent){
       });
     }
     h += `<button class="add-set" onclick="addRound('${sq(A.name)}','${sq(B.name)}')">${ico('plus','ic-sm')}<span>Add round</span></button>`;
-    h += reorderHTML(A.name);
     h += swapButtonHTML(A, true) + swapButtonHTML(B, true);
     h += noteButtonHTML(A, true) + noteButtonHTML(B, true);
     if(allDone) h += `<div class="finish-banner">${ico('check','ic-sm')}<span>Superset complete — change any picker to adjust a set</span></div>`;
