@@ -63,6 +63,9 @@ python -m http.server 8000   # then visit http://localhost:8000
   },
   "extraEx": [                // optional, exercises added on the fly that day
     { "name": "Seated Calf Raise", "sets": 3, "reps": "15–20", "muscle": "Calves" }
+  ],
+  "order": [                  // optional, this-workout-only exercise ordering
+    "Bench Press", "Goblet Squat"
   ]
 }
 ```
@@ -108,6 +111,44 @@ balance and swapping never depend on name-matching.
 
 Because history is keyed by exercise name, the same name can't appear twice in
 one workout — adding a duplicate is rejected with a toast.
+
+When adding during a workout, exercises you've previously added on the fly *to
+that same day* appear first under **Added before on this day**, newest first,
+with the date you last added them. They're hidden once already in the session,
+and only shown on the unfiltered (**All**) view so a muscle chip keeps meaning
+exactly what it says.
+
+A newly added exercise is inserted **directly after whichever card is open**,
+not appended to the bottom — so adding a finisher mid-workout lands where you
+are. With nothing open it appends, and adding under a superset clears both
+halves of the pair.
+
+## Reordering
+
+**Hold an exercise card's header, then drag it up or down.** This reorders the
+current workout only — the routine is untouched.
+
+- Ordering works on *blocks*, not individual exercises, so a superset pair
+  always travels together and can never be split.
+- A ~280 ms hold starts the drag (with a haptic tick). Moving more than 10 px
+  before that cancels it, so ordinary scrolling still works anywhere on a card.
+- Picking a card up **collapses every expanded card**, so you drag over a short
+  list of uniform rows instead of scrolling past an open set logger. Whatever
+  was open is re-opened once you drop, so you don't lose your place. (The
+  collapse re-renders, so the card is re-found by `data-ex` afterwards and the
+  drag re-anchors to the pointer to avoid a jump.)
+- The click that trails a drag release is swallowed, so dropping a card doesn't
+  also toggle it open.
+- Dragging near the top or bottom edge auto-scrolls the list.
+- Geometry is tracked in document coordinates, so auto-scrolling can't throw
+  off the drop position, and `render()` runs only once — on drop.
+
+The order is stored as a list of names in `ActiveSession.order` and applied as a
+stable sort, so anything not in the list keeps its relative place. Swapping an
+exercise renames it within the order; removing one drops it.
+
+To reorder a routine *permanently*, use the ↑/↓ buttons in Manage routines →
+edit a day.
 
 **Swapping** happens in two places:
 
