@@ -132,6 +132,11 @@ current workout only — the routine is untouched.
   always travels together and can never be split.
 - A ~280 ms hold starts the drag (with a haptic tick). Moving more than 10 px
   before that cancels it, so ordinary scrolling still works anywhere on a card.
+- Picking a card up **collapses every expanded card**, so you drag over a short
+  list of uniform rows instead of scrolling past an open set logger. Whatever
+  was open is re-opened once you drop, so you don't lose your place. (The
+  collapse re-renders, so the card is re-found by `data-ex` afterwards and the
+  drag re-anchors to the pointer to avoid a jump.)
 - The click that trails a drag release is swallowed, so dropping a card doesn't
   also toggle it open.
 - Dragging near the top or bottom edge auto-scrolls the list.

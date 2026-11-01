@@ -1395,12 +1395,16 @@ function placeAfter(newName, anchorName){
 const HOLD_MS = 280, HOLD_SLOP = 10, EDGE = 90, EDGE_SPEED = 12;
 let _drag = null, _holdTimer = null, _dragEndedAt = 0;
 
+function cardElFor(name){
+  return [...document.querySelectorAll('.ex-card')].find(el => el.dataset.ex === name) || null;
+}
 function cardDragDown(ev, exName){
   if(state.day == null || state.timer) return;
   if(ev.button != null && ev.button !== 0) return;      // right/middle click
   const card = ev.target.closest ? ev.target.closest('.ex-card') : null;
   if(!card) return;
   const x0 = ev.clientX, y0 = ev.clientY;
+  let lastY = y0;
   const abort = () => {
     clearTimeout(_holdTimer); _holdTimer = null;
     window.removeEventListener('pointermove', watch);
@@ -1409,28 +1413,38 @@ function cardDragDown(ev, exName){
     card.classList.remove('drag-arm');
   };
   // any real movement before the hold completes means they're scrolling
-  const watch = m => { if(Math.abs(m.clientY-y0) > HOLD_SLOP || Math.abs(m.clientX-x0) > HOLD_SLOP) abort(); };
+  const watch = m => {
+    lastY = m.clientY;
+    if(Math.abs(m.clientY-y0) > HOLD_SLOP || Math.abs(m.clientX-x0) > HOLD_SLOP) abort();
+  };
   window.addEventListener('pointermove', watch);
   window.addEventListener('pointerup', abort);
   window.addEventListener('pointercancel', abort);
   card.classList.add('drag-arm');
-  _holdTimer = setTimeout(() => { abort(); dragBegin(card, exName, y0); }, HOLD_MS);
+  _holdTimer = setTimeout(() => { abort(); dragBegin(exName, lastY); }, HOLD_MS);
 }
 
-function dragBegin(card, exName, clientY){
+function dragBegin(exName, clientY){
+  // Collapse everything first — a short list of uniform cards is far easier to
+  // drag over. This re-renders, so the card element has to be re-found after.
+  const open = sessionDay().exercises[state.expanded];
+  const prevName = open ? open.name : null;
+  if(state.expanded !== -1){ state.expanded = -1; persistSession(); render(); }
+  const card = cardElFor(exName);
+  if(!card) return;
   const cards = [...card.parentElement.children].filter(el => el.classList.contains('ex-card'));
   const from = cards.indexOf(card);
   if(from < 0 || cards.length < 2) return;
   if(navigator.vibrate) navigator.vibrate(18);
   const sy = window.scrollY;
   _drag = {
-    card, exName, cards, from, to: from,
+    card, exName, prevName, cards, from, to: from,
     mids: cards.map(el => { const r = el.getBoundingClientRect(); return r.top + sy + r.height/2; }),
     slot: card.getBoundingClientRect().height + 10,    // card height + the 10px gap it vacates
+    // re-anchor to where the finger is NOW, so the collapse doesn't make the card jump
     startDoc: clientY + sy, lastClientY: clientY, raf: 0,
   };
   document.body.classList.add('dragging');
-  card.classList.remove('drag-arm');
   card.classList.add('drag-card');
   window.addEventListener('pointermove', dragMove);
   window.addEventListener('pointerup', dragDrop);
@@ -1501,7 +1515,14 @@ function dragDrop(){
   d.card.classList.remove('drag-card');
   d.cards.forEach(el => { el.style.transform = ''; el.classList.remove('drag-sibling'); });
   _dragEndedAt = Date.now();                    // suppress the click that follows the release
-  if(d.to !== d.from && applyBlockMove(d.from, d.to, d.exName)) toast('Reordered');
+  // re-open whatever the user had open before the drag collapsed the list
+  const moved = d.to !== d.from && applyBlockMove(d.from, d.to, d.prevName);
+  if(!moved && d.prevName){
+    const i = sessionDay().exercises.findIndex(e => e.name === d.prevName);
+    if(i >= 0) state.expanded = i;
+    persistSession();
+  }
+  if(moved) toast('Reordered');
   render();
 }
 
@@ -2546,7 +2567,7 @@ function renderSingleBlock(ex, idx, num, accent){
   const logged = state.logged[ex.name]||[];
   const doneCount = logged.filter(Boolean).length;
   const allDone = doneCount>=ex.sets;
-  let h = `<div class="ex-card ${allDone?'done':''} ${open?'open':''}" style="--accent:${accent}">
+  let h = `<div class="ex-card ${allDone?'done':''} ${open?'open':''}" data-ex="${esc(ex.name)}" style="--accent:${accent}">
     <div class="ex-top" onpointerdown="cardDragDown(event,'${sq(ex.name)}')" onclick="toggleBlock(${idx},[${idx}])">
       <div class="ex-num ${allDone?'complete':(open?'active':'')}" style="${open&&!allDone?'background:'+accent:''}">${allDone?ico('check','ic-sm'):num}</div>
       <div style="flex:1">
@@ -2578,7 +2599,7 @@ function renderIntervalBlock(ex, idx, num, accent){
   const done = !!(state.logged[ex.name] && state.logged[ex.name][0]);
   const rounds = +ex.rounds||3, workSec = +ex.workSec||180, restSec = +ex.restSec||60;
   const total = rounds*workSec + (rounds-1)*restSec;
-  let h = `<div class="ex-card ${done?'done':''} ${open?'open':''}" style="--accent:${accent}">
+  let h = `<div class="ex-card ${done?'done':''} ${open?'open':''}" data-ex="${esc(ex.name)}" style="--accent:${accent}">
     <div class="ex-top" onpointerdown="cardDragDown(event,'${sq(ex.name)}')" onclick="toggleBlock(${idx},[${idx}])">
       <div class="ex-num ${done?'complete':(open?'active':'')}" style="${open&&!done?'background:'+accent:''}">${done?ico('check','ic-sm'):num}</div>
       <div style="flex:1">
@@ -2610,7 +2631,7 @@ function renderSupersetBlock(exs, ai, bi, num, accent){
   const totalDone = loggedCount(A.name) + loggedCount(B.name);
   const totalSets = A.sets + B.sets;
   const ssRest = Math.max(A.rest, B.rest);
-  let h = `<div class="ex-card ss-card ${allDone?'done':''} ${open?'open':''}" style="--accent:${accent}">
+  let h = `<div class="ex-card ss-card ${allDone?'done':''} ${open?'open':''}" data-ex="${esc(A.name)}" style="--accent:${accent}">
     <div class="ex-top" onpointerdown="cardDragDown(event,'${sq(A.name)}')" onclick="toggleBlock(${ai},[${ai},${bi}])">
       <div class="ex-num ${allDone?'complete':(open?'active':'')}" style="${open&&!allDone?'background:'+accent:''}">${allDone?ico('check','ic-sm'):num}</div>
       <div style="flex:1">
