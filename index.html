@@ -758,7 +758,8 @@ function sessionFromState(){
     startedAt: state.startedAt, resumeDate: state.resumeDate || null,
     logged: state.logged, snap: state.snap, dbn: state.dbn,
     extra: state._extra || {}, notes: state.notes || {}, swaps: state.swaps || {},
-    extraEx: state.extraEx || [], order: state.order || [], expanded: state.expanded
+    extraEx: state.extraEx || [], order: state.order || [],
+    expanded: state.expanded, picked: !!state.picked
   };
 }
 // Called after every logged/edited set so a refresh never loses progress.
@@ -776,6 +777,7 @@ function loadSessionIntoState(sess){
   state.swaps = sess.swaps || {};
   state.extraEx = sess.extraEx || [];
   state.order = sess.order || [];
+  state.picked = !!sess.picked;
   state.startedAt = sess.startedAt || new Date().toISOString();
   state.resumeDate = sess.resumeDate || null;
   state.expanded = (sess.expanded == null) ? 0 : sess.expanded;
@@ -875,7 +877,7 @@ function deleteSession(date){
 // ================================================================
 let state = {
   tab: 'today', day: null, expanded: 0, logged: {}, timer: null, snap: {}, dbn: {},
-  notes: {}, swaps: {}, extraEx: [], order: [], startedAt: null, resumeDate: null, noteModal: null, exPicker: null,
+  notes: {}, swaps: {}, extraEx: [], order: [], picked: false, startedAt: null, resumeDate: null, noteModal: null, exPicker: null,
   histTab: 'workouts', openSession: null,
   progView: 'info', editId: null, editDayOpen: null, exForm: null,
 };
@@ -997,7 +999,7 @@ function openDay(d){
     toast('Continuing today\'s workout');
     return;
   }
-  state.day=d; state.expanded=0; state.logged={}; state._extra={}; state.notes={}; state.swaps={}; state.extraEx=[]; state.order=[];
+  state.day=d; state.expanded=0; state.logged={}; state._extra={}; state.notes={}; state.swaps={}; state.extraEx=[]; state.order=[]; state.picked=false;
   state.startedAt = new Date().toISOString(); state.resumeDate = null;
   // Seed each exercise's dumbbell mode + count from the last equivalent session, else defaults.
   state.snap = {}; state.dbn = {};
@@ -1029,7 +1031,10 @@ function finishWorkout(){
 }
 function toggleBlock(primary, members){
   if(Date.now() - _dragEndedAt < 350) return;   // the click that trails a drag release
-  state.expanded = members.includes(state.expanded) ? -1 : primary; persistSession(); render();
+  const closing = members.includes(state.expanded);
+  state.expanded = closing ? -1 : primary;
+  if(!closing) state.picked = true;             // a deliberate choice, unlike the default-open card
+  persistSession(); render();
 }
 function val(id){ const el = document.getElementById(id); return el ? el.value.trim() : ''; }
 
@@ -1044,6 +1049,7 @@ function advanceAfter(exs, blocks, block){
     const bl = blocks[k];
     if(blockIncomplete(exs, bl)){
       state.expanded = bl.a;
+      state.picked = true;        // the workout has moved on — this is now "where you are"
       return bl.type==='ss'
         ? 'Next: '+exs[bl.a].name+' + '+exs[bl.b].name
         : 'Next: '+exs[bl.a].name;
@@ -1534,15 +1540,18 @@ function addSessionExercise(muscle, name){
   const d = sessionDay();
   // history is keyed by exercise name, so one name can only appear once
   if(d && d.exercises.some(e=>e.name===ex.name)){ toast(ex.name+' is already in this workout'); return false; }
-  // remember which card is open — the new exercise slots in right after it
-  const anchor = d && d.exercises[state.expanded] ? d.exercises[state.expanded].name : null;
+  // Slot in after the card the user is actually on. Opening a day auto-expands
+  // the first exercise, which isn't a choice — so only anchor once they've
+  // picked a card or the workout has advanced. Otherwise append.
+  const anchor = (state.picked && d && d.exercises[state.expanded])
+    ? d.exercises[state.expanded].name : null;
   if(!state.extraEx) state.extraEx = [];
   state.extraEx.push(ex);
   seedExerciseModes(ex);
   placeAfter(ex.name, anchor);
   const nd = sessionDay();
   const i = nd.exercises.findIndex(e=>e.name===ex.name);
-  if(i>=0) state.expanded = i;
+  if(i>=0){ state.expanded = i; state.picked = true; }   // the new card is now where you are
   persistSession();
   return true;
 }
