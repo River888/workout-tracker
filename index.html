@@ -185,8 +185,26 @@
   .set-log-btn:active { transform: scale(0.9); }
   .set-log-btn .ic { stroke-width: 3; }
   .set-log-btn.logged { background: color-mix(in srgb, var(--cond) 16%, var(--card2)); color: var(--cond); box-shadow: none; }
-  .add-set { background: var(--card2); border: 1px dashed var(--border2); color: var(--muted); font-size: 13px; padding: 14px; border-radius: var(--r-sm); width: 100%; margin-top: 4px; font-weight: 650; display: flex; align-items: center; justify-content: center; gap: 7px; transition: background 0.15s, border-color 0.15s; }
-  .add-set:active { background: var(--elev); border-color: var(--muted); }
+  /* Icon-led exercise actions */
+  .act-row { display: flex; gap: 8px; margin-top: 10px; }
+  .act {
+    flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px;
+    padding: 11px 6px; border-radius: var(--r-sm);
+    background: var(--card2); border: 1px solid var(--border); color: var(--muted);
+    box-shadow: var(--hi); transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.16s var(--spring);
+  }
+  .act:active { background: var(--elev); border-color: var(--border2); transform: scale(0.94); }
+  .act .act-ic { display: flex; }
+  .act .act-ic svg { width: 19px; height: 19px; }
+  .act-l { font-size: 10.5px; font-weight: 750; letter-spacing: 0.01em; white-space: nowrap; }
+  .act.has { border-color: color-mix(in srgb, var(--pr) 38%, var(--border)); color: var(--pr); background: color-mix(in srgb, var(--pr) 8%, var(--card2)); }
+  .act.solo { flex-direction: row; gap: 8px; padding: 14px; }   /* a lone button reads better inline */
+  .act.solo .act-l { font-size: 13px; }
+  /* superset: name on the left, icon-only actions on the right */
+  .act-sub { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .act-sub .act-name { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 680; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .act.mini { flex: 0 0 auto; width: 46px; padding: 10px 0; }
+  .act.mini .act-l { display: none; }
   .last-time { font-size: 12.5px; color: var(--muted); margin-bottom: 14px; display: flex; gap: 7px; flex-wrap: wrap; }
   .last-time .pill { background: var(--bg2); border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 5px; }
   .last-time b { color: var(--text); font-weight: 750; font-variant-numeric: tabular-nums; }
@@ -194,9 +212,6 @@
   .empty-ex { font-size: 13.5px; color: var(--dim); text-align: center; padding: 34px 16px; line-height: 1.6; }
 
   /* Notes */
-  .note-btn { background: var(--card2); border: 1px dashed var(--border2); color: var(--muted); font-size: 13px; padding: 14px; border-radius: var(--r-sm); width: 100%; margin-top: 8px; font-weight: 650; display: flex; align-items: center; justify-content: center; gap: 7px; transition: background 0.15s, border-color 0.15s; }
-  .note-btn:active { background: var(--elev); }
-  .note-btn.has { border-style: solid; border-color: color-mix(in srgb, var(--pr) 38%, var(--border2)); color: var(--pr); background: color-mix(in srgb, var(--pr) 7%, var(--card2)); }
   .last-time .pill.note { border-color: color-mix(in srgb, var(--pr) 38%, var(--border)); color: var(--pr); background: color-mix(in srgb, var(--pr) 7%, var(--bg2)); cursor: pointer; font-weight: 650; }
   .note-preview { font-size: 12.5px; color: var(--muted); background: var(--bg2); border: 1px solid var(--hair); border-left: 3px solid var(--pr); border-radius: var(--r-sm); padding: 11px 13px; margin-bottom: 12px; line-height: 1.55; white-space: pre-wrap; }
 
@@ -223,8 +238,6 @@
   .modal-actions button.warn { background: color-mix(in srgb, var(--danger) 10%, var(--card)); border-color: color-mix(in srgb, var(--danger) 30%, transparent); color: var(--danger); flex: 0 0 auto; padding: 15px 17px; }
 
   /* Swap + exercise library picker */
-  .swap-btn { background: var(--card2); border: 1px dashed var(--border2); color: var(--muted); font-size: 13px; padding: 14px; border-radius: var(--r-sm); width: 100%; margin-top: 8px; font-weight: 650; display: flex; align-items: center; justify-content: center; gap: 7px; transition: background 0.15s, border-color 0.15s; }
-  .swap-btn:active { background: var(--elev); }
   .swap-note { font-size: 11.5px; color: var(--dim); margin-top: 7px; text-align: center; }
   /* Drag to reorder */
   .grip { color: var(--dim); display: flex; opacity: 0.45; margin-left: 2px; transition: opacity 0.15s, color 0.15s; }
@@ -1238,11 +1251,6 @@ function renderNoteModal(){
       </div>
     </div></div>`;
 }
-function noteButtonHTML(ex, showName){
-  const has = !!noteFor(ex.name);
-  const what = showName ? ' · '+esc(ex.name) : '';
-  return `<button class="note-btn ${has?'has':''}" onclick="openNoteEdit('${sq(ex.name)}')">${ico(has?'pencil':'note','ic-sm')}<span>${has?'Edit note':'Add note'}${what}</span></button>`;
-}
 
 // ================================================================
 //  EXERCISE LIBRARY PICKER  (add from list / swap same muscle group)
@@ -1707,17 +1715,44 @@ function swapTagHTML(ex){
   const orig = isSwapped(ex.name);
   return orig ? `<span class="swap-tag" title="Swapped in for ${esc(orig)}">${ico('swap','ic-xs')}SWAP</span>` : '';
 }
-// Swap control shown on an exercise card during a workout.
-function swapButtonHTML(ex, showName){
+// ---- compact, icon-led exercise actions ----
+function actBtn(icon, label, click, cls){
+  return `<button class="act ${cls||''}" onclick="${click}" title="${esc(label)}" aria-label="${esc(label)}">`
+    + `<span class="act-ic">${ico(icon)}</span><span class="act-l">${esc(label)}</span></button>`;
+}
+function swapClick(ex){
+  return `openLibrary({mode:'swapSession',origName:'${sq(ex.name)}',muscle:'${sq(muscleOfEx(ex))}'})`;
+}
+// "swapped in for X" / "added today" note, shown under the actions.
+function exStatusHTML(ex){
+  if(isExtra(ex.name))
+    return `<div class="swap-note">Added for this workout only · <button class="linkish" onclick="removeSessionExercise('${sq(ex.name)}')">remove</button></div>`;
   const orig = isSwapped(ex.name);
-  const what = showName ? ' · '+esc(ex.name) : '';
-  const m = muscleOfEx(ex);
-  let h = `<button class="swap-btn" onclick="openLibrary({mode:'swapSession',origName:'${sq(ex.name)}',muscle:'${sq(m)}'})">${ico('swap','ic-sm')}<span>Swap exercise${what}</span></button>`;
-  if(isExtra(ex.name)){
-    h += `<div class="swap-note">Added for this workout only · <button class="linkish" onclick="removeSessionExercise('${sq(ex.name)}')">remove</button></div>`;
-  } else if(orig){
-    h += `<div class="swap-note">Swapped in for <b>${esc(orig)}</b> · <button class="linkish" onclick="revertSwap('${sq(ex.name)}')">undo</button></div>`;
-  }
+  if(orig)
+    return `<div class="swap-note">Swapped in for <b>${esc(orig)}</b> · <button class="linkish" onclick="revertSwap('${sq(ex.name)}')">undo</button></div>`;
+  return '';
+}
+// Single exercise — Add set / Swap / Note across one row.
+function actionRowHTML(ex, add){
+  const hasNote = !!noteFor(ex.name);
+  let h = `<div class="act-row">`;
+  if(add) h += actBtn('plus', add.label, add.click);
+  h += actBtn('swap', 'Swap', swapClick(ex));
+  h += actBtn(hasNote?'pencil':'note', 'Note', `openNoteEdit('${sq(ex.name)}')`, hasNote?'has':'');
+  return h + `</div>` + exStatusHTML(ex);
+}
+// Superset — one shared Add round, then icon-only Swap/Note per exercise.
+function ssActionsHTML(A, B){
+  let h = `<div class="act-row">`
+    + actBtn('plus', 'Add round', `addRound('${sq(A.name)}','${sq(B.name)}')`, 'solo')
+    + `</div>`;
+  [A,B].forEach(ex=>{
+    const hasNote = !!noteFor(ex.name);
+    h += `<div class="act-sub"><span class="act-name">${esc(ex.name)}</span>`
+      + actBtn('swap', 'Swap', swapClick(ex), 'mini')
+      + actBtn(hasNote?'pencil':'note', 'Note', `openNoteEdit('${sq(ex.name)}')`, 'mini'+(hasNote?' has':''))
+      + `</div>` + exStatusHTML(ex);
+  });
   return h;
 }
 function libSummary(e){
@@ -2594,8 +2629,7 @@ function renderSingleBlock(ex, idx, num, accent){
     const total = Math.max(ex.sets + extraFor(ex.name), logged.length);
     for(let s=0;s<total;s++) h += setRowHTML(ex, s, {});
     h += `</div>`;
-    if(track!=='time') h += `<button class="add-set" onclick="addExtraSet('${sq(ex.name)}')">${ico('plus','ic-sm')}<span>Add set</span></button>`;
-    h += swapButtonHTML(ex) + noteButtonHTML(ex);
+    h += actionRowHTML(ex, track!=='time' ? { label:'Add set', click:`addExtraSet('${sq(ex.name)}')` } : null);
     if(allDone) h += `<div class="finish-banner">${ico('check','ic-sm')}<span>Exercise complete${track!=='time'?' — change any picker to adjust a set':''}</span></div>`;
     h += cuesHTML(ex) + `</div>`;
   }
@@ -2671,9 +2705,7 @@ function renderSupersetBlock(exs, ai, bi, num, accent){
         h += setRowHTML(ex, rd, { awaiting });
       });
     }
-    h += `<button class="add-set" onclick="addRound('${sq(A.name)}','${sq(B.name)}')">${ico('plus','ic-sm')}<span>Add round</span></button>`;
-    h += swapButtonHTML(A, true) + swapButtonHTML(B, true);
-    h += noteButtonHTML(A, true) + noteButtonHTML(B, true);
+    h += ssActionsHTML(A, B);
     if(allDone) h += `<div class="finish-banner">${ico('check','ic-sm')}<span>Superset complete — change any picker to adjust a set</span></div>`;
     h += cuesHTML2(A, B) + `</div>`;
   }
