@@ -226,6 +226,10 @@
   .swap-btn { background: var(--card2); border: 1px dashed var(--border2); color: var(--muted); font-size: 13px; padding: 14px; border-radius: var(--r-sm); width: 100%; margin-top: 8px; font-weight: 650; display: flex; align-items: center; justify-content: center; gap: 7px; transition: background 0.15s, border-color 0.15s; }
   .swap-btn:active { background: var(--elev); }
   .swap-note { font-size: 11.5px; color: var(--dim); margin-top: 7px; text-align: center; }
+  .reorder-row { display: flex; gap: 8px; margin-top: 8px; }
+  .reorder-btn { flex: 1; background: var(--card2); border: 1px dashed var(--border2); color: var(--muted); font-size: 12.5px; font-weight: 650; padding: 13px 10px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.15s, transform 0.16s var(--spring); }
+  .reorder-btn:active:not(:disabled) { background: var(--elev); transform: scale(0.96); }
+  .reorder-btn:disabled { opacity: 0.32; cursor: default; }
   .add-ex-wrap { padding: 16px 16px 0; }
   .add-ex-btn { width: 100%; background: var(--card2); border: 1px dashed var(--border2); color: var(--muted); font-size: 14px; font-weight: 700; padding: 16px; border-radius: var(--r); display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.15s, border-color 0.15s; }
   .add-ex-btn:active { background: var(--elev); border-color: var(--muted); }
@@ -250,6 +254,10 @@
   .lib-item > .ic-sm { color: var(--dim); }
   .li-n { font-size: 14.5px; font-weight: 720; color: var(--text); letter-spacing: -0.015em; }
   .li-cur { font-size: 9px; font-weight: 800; letter-spacing: 0.08em; background: var(--cond); color: #06210f; padding: 2px 6px; border-radius: 5px; margin-left: 7px; vertical-align: middle; }
+  .lib-head.sugg-head { color: var(--pr); display: flex; align-items: center; gap: 6px; }
+  .lib-item.sugg { border-color: color-mix(in srgb, var(--pr) 30%, var(--border)); background: color-mix(in srgb, var(--pr) 6%, var(--card2)); }
+  .lib-item.sugg > .ic-sm { color: var(--pr); }
+  .li-prev { font-size: 9px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; background: color-mix(in srgb, var(--pr) 18%, var(--elev)); color: var(--pr); padding: 2px 6px; border-radius: 5px; margin-left: 7px; vertical-align: middle; }
   .li-e { font-size: 11.5px; color: var(--dim); margin-top: 3px; }
 
   /* Finish workout + resume */
@@ -719,6 +727,7 @@ function commitSession(sess){
     notes: notes,          // per-exercise free-text notes
     swaps: sess.swaps || {},       // same-muscle substitutions made during the workout
     extraEx: sess.extraEx || [],   // exercises added on the fly for this workout
+    order: sess.order || [],       // this-workout-only exercise ordering
     exercises: clean
   };
   const h = getHistory();
@@ -739,7 +748,7 @@ function sessionFromState(){
     startedAt: state.startedAt, resumeDate: state.resumeDate || null,
     logged: state.logged, snap: state.snap, dbn: state.dbn,
     extra: state._extra || {}, notes: state.notes || {}, swaps: state.swaps || {},
-    extraEx: state.extraEx || [], expanded: state.expanded
+    extraEx: state.extraEx || [], order: state.order || [], expanded: state.expanded
   };
 }
 // Called after every logged/edited set so a refresh never loses progress.
@@ -756,6 +765,7 @@ function loadSessionIntoState(sess){
   state.notes = sess.notes || {};
   state.swaps = sess.swaps || {};
   state.extraEx = sess.extraEx || [];
+  state.order = sess.order || [];
   state.startedAt = sess.startedAt || new Date().toISOString();
   state.resumeDate = sess.resumeDate || null;
   state.expanded = (sess.expanded == null) ? 0 : sess.expanded;
@@ -855,7 +865,7 @@ function deleteSession(date){
 // ================================================================
 let state = {
   tab: 'today', day: null, expanded: 0, logged: {}, timer: null, snap: {}, dbn: {},
-  notes: {}, swaps: {}, extraEx: [], startedAt: null, resumeDate: null, noteModal: null, exPicker: null,
+  notes: {}, swaps: {}, extraEx: [], order: [], startedAt: null, resumeDate: null, noteModal: null, exPicker: null,
   histTab: 'workouts', openSession: null,
   progView: 'info', editId: null, editDayOpen: null, exForm: null,
 };
@@ -971,13 +981,13 @@ function openDay(d){
       day: d, routineId: rid, startedAt: prev.date, resumeDate: prev.date,
       logged: deepCopy(prev.exercises), snap: deepCopy(prev.snap||{}), dbn: deepCopy(prev.dbn||{}),
       notes: deepCopy(prev.notes||{}), swaps: deepCopy(prev.swaps||{}),
-      extraEx: deepCopy(prev.extraEx||[]), extra: {}, expanded: 0
+      extraEx: deepCopy(prev.extraEx||[]), order: deepCopy(prev.order||[]), extra: {}, expanded: 0
     });
     persistSession(); render();
     toast('Continuing today\'s workout');
     return;
   }
-  state.day=d; state.expanded=0; state.logged={}; state._extra={}; state.notes={}; state.swaps={}; state.extraEx=[];
+  state.day=d; state.expanded=0; state.logged={}; state._extra={}; state.notes={}; state.swaps={}; state.extraEx=[]; state.order=[];
   state.startedAt = new Date().toISOString(); state.resumeDate = null;
   // Seed each exercise's dumbbell mode + count from the last equivalent session, else defaults.
   state.snap = {}; state.dbn = {};
@@ -1290,13 +1300,20 @@ function seedExerciseModes(ex){
   if(!(ex.name in state.snap)) state.snap[ex.name] = !!(isDumbbell(ex) && getSetting('dbSnap', true));
   if(!(ex.name in state.dbn)) state.dbn[ex.name] = dbCount(ex);
 }
+// A swap renames the slot, so any saved ordering has to follow it.
+function renameInOrder(from, to){
+  if(!state.order || from===to) return;
+  state.order = state.order.map(n => n===from ? to : n);
+}
 function swapInSession(displayName, muscle, name){
   // an exercise added just for today is replaced in place, not tracked as a swap
   const extras = state.extraEx || [];
   const ei = extras.findIndex(e=>e.name===displayName);
   if(ei >= 0){
     const rep = swapMerge(extras[ei], muscle, name); if(!rep) return;
-    extras[ei] = rep; seedExerciseModes(rep); persistSession();
+    extras[ei] = rep; seedExerciseModes(rep);
+    renameInOrder(displayName, rep.name);
+    persistSession();
     return;
   }
   const key = swapKeyFor(displayName);
@@ -1307,8 +1324,46 @@ function swapInSession(displayName, muscle, name){
   if(ex.name === key) delete state.swaps[key];
   else state.swaps[key] = ex;
   seedExerciseModes(ex);
+  renameInOrder(displayName, ex.name);
   persistSession();
 }
+// ---- reordering, for this workout only ----
+// Works on BLOCKS, not individual exercises, so a superset pair moves together.
+function blockIndexFor(blocks, exs, exName){
+  return blocks.findIndex(bl => bl.type==='single'
+    ? exs[bl.a].name===exName
+    : (exs[bl.a].name===exName || exs[bl.b].name===exName));
+}
+function moveSessionBlock(exName, dir){
+  const d = sessionDay(); if(!d) return;
+  const exs = d.exercises;
+  const blocks = buildBlocks(exs);
+  const from = blockIndexFor(blocks, exs, exName);
+  const to = from + dir;
+  if(from < 0 || to < 0 || to >= blocks.length) return;
+  const arr = blocks.slice();
+  arr.splice(to, 0, arr.splice(from, 1)[0]);
+  const order = [];
+  arr.forEach(bl => { order.push(exs[bl.a].name); if(bl.type==='ss') order.push(exs[bl.b].name); });
+  state.order = order;
+  // state.expanded is an index, so re-resolve it against the new order
+  const moved = sessionDay().exercises.findIndex(e=>e.name===exName);
+  if(moved >= 0) state.expanded = moved;
+  persistSession(); render();
+}
+function reorderHTML(exName){
+  const d = sessionDay(); if(!d) return '';
+  const exs = d.exercises;
+  const blocks = buildBlocks(exs);
+  if(blocks.length < 2) return '';
+  const i = blockIndexFor(blocks, exs, exName);
+  if(i < 0) return '';
+  return `<div class="reorder-row">
+    <button class="reorder-btn" ${i<=0?'disabled':''} onclick="moveSessionBlock('${sq(exName)}',-1)">${ico('up','ic-sm')}<span>Move up</span></button>
+    <button class="reorder-btn" ${i>=blocks.length-1?'disabled':''} onclick="moveSessionBlock('${sq(exName)}',1)">${ico('dn','ic-sm')}<span>Move down</span></button>
+  </div>`;
+}
+
 // ---- extra exercises, added for this workout only ----
 function isExtra(name){ return (state.extraEx||[]).some(e=>e.name===name); }
 function addSessionExercise(muscle, name){
@@ -1330,6 +1385,7 @@ function removeSessionExercise(name){
   const done = (state.logged[name]||[]).filter(Boolean).length;
   if(done && !confirm('Remove '+name+'? '+done+' logged set'+(done===1?'':'s')+' will be discarded.')) return;
   state.extraEx = (state.extraEx||[]).filter(e=>e.name!==name);
+  if(state.order) state.order = state.order.filter(n=>n!==name);
   delete state.logged[name];
   if(state.notes) delete state.notes[name];
   if(state._extra) delete state._extra[name];
@@ -1349,11 +1405,17 @@ function sessionDay(){
   const sw = state.swaps || {};
   const keys = Object.keys(sw);
   const extra = state.extraEx || [];
-  if(!keys.length && !extra.length) return d;
+  const order = state.order || [];
+  if(!keys.length && !extra.length && !order.length) return d;
   const rename = {}; keys.forEach(k=>{ rename[k] = sw[k].name; });
   const exercises = d.exercises.map(e => Object.assign({}, sw[e.name] || e));
   exercises.forEach(e=>{ if(e.superset && rename[e.superset]) e.superset = rename[e.superset]; });
   extra.forEach(e => exercises.push(Object.assign({}, e)));
+  if(order.length){
+    // sort is stable, so anything not in the saved order keeps its relative place at the end
+    const pos = {}; order.forEach((n,i)=>{ pos[n] = i; });
+    exercises.sort((a,b)=>(pos[a.name]==null?1e6:pos[a.name]) - (pos[b.name]==null?1e6:pos[b.name]));
+  }
   return Object.assign({}, d, { exercises: exercises });
 }
 function isSwapped(displayName){
@@ -1381,6 +1443,23 @@ function choosePickerItem(muscle, name){
     state.exPicker=null; render(); popNavUI(); toast('Swapped to '+name);
   }
 }
+// Exercises previously added on the fly to this day — most recent first, deduped,
+// and limited to ones still in the library so they can actually be re-added.
+function previouslyAddedFor(dayCode, routineId){
+  const h = getHistory(), seen = new Set(), out = [];
+  for(let i=h.length-1;i>=0;i--){
+    const s = h[i];
+    if(s.date===state.resumeDate) continue;        // that's the workout being edited
+    if(dayCode && s.day!==dayCode) continue;
+    if(routineId && s.routineId!==routineId) continue;
+    (s.extraEx||[]).forEach(e=>{
+      if(!e || !e.name || seen.has(e.name)) return;
+      seen.add(e.name);
+      if(libEntry(e.muscle, e.name)) out.push({ name: e.name, muscle: e.muscle, date: s.date });
+    });
+  }
+  return out;
+}
 function renderExPicker(){
   const p = state.exPicker; if(!p) return '';
   const withEntries = MUSCLE_GROUPS.filter(m=>(EXERCISE_LIBRARY[m]||[]).length);
@@ -1395,6 +1474,31 @@ function renderExPicker(){
     chips += `<button class="chip ${p.muscle===m?'on':''}" style="--mc:${muscleColor(m)}" onclick="pickerSetMuscle('${sq(m)}')">${esc(m)}</button>`;
   });
   let list = '';
+  // Suggestions: things you've added on the fly to this day before. Only on the
+  // unfiltered view, so a muscle chip still means exactly what it says.
+  if(adding && p.muscle==='__all__'){
+    const dayCode = p.mode==='addSession' ? state.day : p.code;
+    const rid = p.routineId || (activeRoutine()||{}).id;
+    const already = new Set((sessionDay()||{exercises:[]}).exercises.map(e=>e.name));
+    const inDay = p.mode==='add'
+      ? new Set((((routineById(rid)||{days:[]}).days.find(d=>d.code===p.code)||{exercises:[]}).exercises).map(e=>e.name))
+      : already;
+    const sugg = previouslyAddedFor(dayCode, rid).filter(s=>!inDay.has(s.name)).slice(0, 6);
+    if(sugg.length){
+      list += `<div class="lib-group"><div class="lib-head sugg-head">${ico('rotate','ic-xs')}Added before on this day</div>`;
+      sugg.forEach(s=>{
+        const e = libEntry(s.muscle, s.name) || {};
+        list += `<button class="lib-item sugg" data-n="${esc(s.name.toLowerCase())}" onclick="choosePickerItem('${sq(s.muscle)}','${sq(s.name)}')">
+          <div class="lit">
+            <div class="li-n">${esc(s.name)}<span class="li-prev">${esc(s.muscle)}</span></div>
+            <div class="li-e">Last added ${fmtDate(s.date)}${e.equipment?' · '+esc(e.equipment):''}</div>
+          </div>
+          ${ico('plus','ic-sm')}
+        </button>`;
+      });
+      list += `</div>`;
+    }
+  }
   groups.forEach(m=>{
     list += `<div class="lib-group"><div class="lib-head" style="color:${muscleColor(m)}">${esc(m)}</div>`;
     (EXERCISE_LIBRARY[m]||[]).forEach(e=>{
@@ -2316,6 +2420,7 @@ function renderSingleBlock(ex, idx, num, accent){
     for(let s=0;s<total;s++) h += setRowHTML(ex, s, {});
     h += `</div>`;
     if(track!=='time') h += `<button class="add-set" onclick="addExtraSet('${sq(ex.name)}')">${ico('plus','ic-sm')}<span>Add set</span></button>`;
+    h += reorderHTML(ex.name);
     h += swapButtonHTML(ex) + noteButtonHTML(ex);
     if(allDone) h += `<div class="finish-banner">${ico('check','ic-sm')}<span>Exercise complete${track!=='time'?' — change any picker to adjust a set':''}</span></div>`;
     h += cuesHTML(ex) + `</div>`;
@@ -2345,6 +2450,7 @@ function renderIntervalBlock(ex, idx, num, accent){
     h += `<div class="last-time"><span class="pill">${rounds} rounds · ${fmtTime(workSec)} work · ${fmtTime(restSec)} rest</span><span class="pill">≈ ${fmtTime(total)} total</span></div>`;
     h += `<div class="db-note">${ico('zap','ic-sm')}<span>Hands-free — it auto-cycles work → rest → next round. Best with sound on.</span></div>`;
     h += `<button class="time-btn ${done?'done':''}" onclick="${done?`unlogSet('${sq(ex.name)}',0)`:`startInterval('${sq(ex.name)}')`}">${done?ico('check')+'Completed — tap to reset':icoF('play','ic-sm')+'Start '+rounds+' rounds'}</button>`;
+    h += reorderHTML(ex.name);
     h += cuesHTML(ex) + `</div>`;
   }
   h += `</div>`;
@@ -2391,6 +2497,7 @@ function renderSupersetBlock(exs, ai, bi, num, accent){
       });
     }
     h += `<button class="add-set" onclick="addRound('${sq(A.name)}','${sq(B.name)}')">${ico('plus','ic-sm')}<span>Add round</span></button>`;
+    h += reorderHTML(A.name);
     h += swapButtonHTML(A, true) + swapButtonHTML(B, true);
     h += noteButtonHTML(A, true) + noteButtonHTML(B, true);
     if(allDone) h += `<div class="finish-banner">${ico('check','ic-sm')}<span>Superset complete — change any picker to adjust a set</span></div>`;

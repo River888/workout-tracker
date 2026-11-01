@@ -63,6 +63,9 @@ python -m http.server 8000   # then visit http://localhost:8000
   },
   "extraEx": [                // optional, exercises added on the fly that day
     { "name": "Seated Calf Raise", "sets": 3, "reps": "15–20", "muscle": "Calves" }
+  ],
+  "order": [                  // optional, this-workout-only exercise ordering
+    "Bench Press", "Goblet Squat"
   ]
 }
 ```
@@ -108,6 +111,24 @@ balance and swapping never depend on name-matching.
 
 Because history is keyed by exercise name, the same name can't appear twice in
 one workout — adding a duplicate is rejected with a toast.
+
+When adding during a workout, exercises you've previously added on the fly *to
+that same day* appear first under **Added before on this day**, newest first,
+with the date you last added them. They're hidden once already in the session,
+and only shown on the unfiltered (**All**) view so a muscle chip keeps meaning
+exactly what it says.
+
+## Reordering
+
+**Move up / Move down** on an open exercise card reorders the current workout
+only — the routine is untouched. Ordering works on *blocks*, not individual
+exercises, so a superset pair always travels together and stays adjacent. The
+order is stored as a list of names in `ActiveSession.order` and applied as a
+stable sort, so anything not in the list keeps its relative place. Swapping an
+exercise renames it within the order; removing one drops it.
+
+To reorder a routine *permanently*, use the ↑/↓ buttons in Manage routines →
+edit a day.
 
 **Swapping** happens in two places:
 
